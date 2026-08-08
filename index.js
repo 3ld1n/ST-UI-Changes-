@@ -1030,11 +1030,22 @@ function getGuidedResponseGroupMembers() {
         .filter(Boolean);
 }
 
+
 function closeGuidedResponsePicker(value = null) {
     const picker = document.querySelector('#em-guided-response-picker');
     if (!picker) return;
 
     const resolver = picker._emResolve;
+    picker._emResolve = null;
+
+    try {
+        if (picker.open && typeof picker.close === 'function') {
+            picker.close();
+        }
+    } catch {
+        // Ignore: removing the dialog below is enough.
+    }
+
     picker.remove();
 
     if (typeof resolver === 'function') {
@@ -1044,7 +1055,16 @@ function closeGuidedResponsePicker(value = null) {
 
 function showGuidedResponsePicker() {
     const existing = document.querySelector('#em-guided-response-picker');
-    if (existing) existing.remove();
+    if (existing) {
+        try {
+            if (existing.open && typeof existing.close === 'function') {
+                existing.close();
+            }
+        } catch {
+            // no-op
+        }
+        existing.remove();
+    }
 
     const members = getGuidedResponseGroupMembers();
     if (!members.length) {
@@ -1053,9 +1073,17 @@ function showGuidedResponsePicker() {
     }
 
     return new Promise((resolve) => {
-        const overlay = document.createElement('div');
-        overlay.id = 'em-guided-response-picker';
-        overlay._emResolve = resolve;
+        /*
+           Use the native HTML <dialog> top layer rather than a fixed DIV.
+           This is important on iPhone Safari: fixed overlays can be laid out
+           against a different viewport than the currently visible Safari area,
+           which was pushing the top of the picker off-screen.
+        */
+        const dialog = document.createElement('dialog');
+        dialog.id = 'em-guided-response-picker';
+        dialog.className = 'em-gr-picker-dialog';
+        dialog._emResolve = resolve;
+        dialog.setAttribute('aria-labelledby', 'em-gr-picker-title');
 
         const sheet = document.createElement('div');
         sheet.className = 'em-gr-picker-sheet';
@@ -1067,6 +1095,7 @@ function showGuidedResponsePicker() {
         titleWrap.className = 'em-gr-picker-title-wrap';
 
         const title = document.createElement('div');
+        title.id = 'em-gr-picker-title';
         title.className = 'em-gr-picker-title';
         title.textContent = 'Who should respond?';
 
@@ -1114,31 +1143,43 @@ function showGuidedResponsePicker() {
         }
 
         sheet.append(header, list);
-        overlay.appendChild(sheet);
+        dialog.appendChild(sheet);
 
-        overlay.addEventListener('click', (event) => {
-            if (event.target === overlay) {
+        // Cancel via Escape / browser dialog dismissal.
+        dialog.addEventListener('cancel', (event) => {
+            event.preventDefault();
+            closeGuidedResponsePicker(null);
+        });
+
+        // Tapping the dark backdrop closes it. Detect a click that lands
+        // outside the inner sheet but still on the dialog top layer.
+        dialog.addEventListener('click', (event) => {
+            if (event.target !== dialog) return;
+
+            const rect = sheet.getBoundingClientRect();
+            const inside =
+                event.clientX >= rect.left &&
+                event.clientX <= rect.right &&
+                event.clientY >= rect.top &&
+                event.clientY <= rect.bottom;
+
+            if (!inside) {
                 closeGuidedResponsePicker(null);
             }
         });
 
-        document.body.appendChild(overlay);
+        document.body.appendChild(dialog);
 
-        /*
-           iPhone Safari can center fixed overlays against a larger layout
-           viewport than the actually visible area. Anchor the selector above
-           the visible Eldin tool tray instead.
-        */
-        const tray = document.querySelector('#em-tool-tray');
-        const trayRect = tray?.getBoundingClientRect();
-        const viewportHeight = window.visualViewport?.height || window.innerHeight;
-
-        if (trayRect && Number.isFinite(trayRect.top)) {
-            const bottomGap = Math.max(170, viewportHeight - trayRect.top + 12);
-            sheet.style.setProperty('--em-gr-bottom-gap', `${bottomGap}px`);
-        } else {
-            sheet.style.setProperty('--em-gr-bottom-gap', '190px');
+        try {
+            dialog.showModal();
+        } catch (error) {
+            console.warn(`[${MODULE}] dialog.showModal() failed; falling back to open attribute.`, error);
+            dialog.setAttribute('open', '');
         }
+
+        requestAnimationFrame(() => {
+            list.querySelector('.em-gr-picker-member')?.focus?.({ preventScroll: true });
+        });
     });
 }
 
@@ -1172,8 +1213,7 @@ async function runGuidedResponseReliably() {
     const selected = await showGuidedResponsePicker();
     if (!selected) return;
 
-    // The user has chosen the responder. Collapse the Wand tray as generation
-    // starts, matching the rest of the mobile generation UI.
+    // Selection is finished; collapse the Wand tray as generation begins.
     closeToolTray();
 
     const hadOwnSelector = Object.prototype.hasOwnProperty.call(
