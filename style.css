@@ -1252,3 +1252,45 @@
         line-height: 1 !important;
     }
 }
+
+
+/* v1.5 hotfix — Guided Response group picker */
+@media screen and (max-width: 1000px) {
+    /* Guided Generations applies the icon class to the button itself. */
+    body.em-mobile-ui #gg_response_button.fa-comment-dots::before {
+        font-family: "Font Awesome 6 Free" !important;
+        font-weight: 900 !important;
+    }
+
+    /*
+       GG normally calculates bottom position from its action toolbar.
+       Since Eldin Mobile UI moves that toolbar into a floating tray, force the
+       fallback group picker to a stable mobile position above the composer.
+    */
+    body.em-mobile-ui .gg-group-picker-dialog {
+        position: fixed !important;
+        left: 50% !important;
+        right: auto !important;
+        top: auto !important;
+        bottom: max(118px, calc(env(safe-area-inset-bottom) + 108px)) !important;
+        transform: translateX(-50%) !important;
+
+        width: min(360px, calc(100vw - 28px)) !important;
+        max-height: min(58vh, 430px) !important;
+
+        z-index: 1000000 !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+    }
+
+    body.em-mobile-ui .gg-group-picker-dialog,
+    body.em-mobile-ui .gg-group-picker-list,
+    body.em-mobile-ui .gg-group-picker-item {
+        background-color: #1b1b20;
+    }
+
+    body.em-mobile-ui .gg-group-picker-item {
+        border-radius: 10px !important;
+    }
+}

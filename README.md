@@ -1,24 +1,28 @@
 # Eldin Mobile UI v1.5.0
 
-A deliberately small maintenance release.
+Focused Guided Response hotfix. Version remains 1.5.0 as requested.
 
-## Fixed
+## Guided Response fix
 
-### Guided Response
-The Guided Generations "Guided Response" button is now explicitly bridged to
-Guided Generations' own live `window.GuidedGenerations.guidedResponse()`
-function.
+- The Guided Response button now calls Guided Generations' own live
+  `window.GuidedGenerations.guidedResponse()` function.
+- The Eldin Wand tray is deliberately kept open while Guided Generations opens
+  its group-member picker. GG positions that picker relative to its action
+  toolbar, so closing/hiding the tray too early could make the picker appear
+  offscreen.
+- GG's fallback group-member picker is forced to a stable, high-z-index mobile
+  position above the composer.
+- No other working Eldin Mobile UI features were intentionally changed.
 
-This keeps the real Guided Generations behavior:
-- your typed instruction in the message box
-- Guided Response prompt/settings/depth
-- group-member selection
-- native generation handling
+## Icon fix
 
-The patch uses the real GG function rather than recreating Guided Response.
+Guided Generations attaches `fa-dog` directly to the button element itself.
+The previous patch looked for a child icon, so the dog remained visible.
 
-### New icon
-The old dog icon has been replaced visually with a speech bubble containing
-dots, which better represents "guide this character's next response."
+This hotfix replaces the button's own `fa-dog` class with
+`fa-comment-dots`, giving Guided Response a neutral chat/reply icon.
 
-No other Eldin Mobile UI behavior was intentionally changed in v1.5.
+## GitHub
+
+Keep the manifest at version 1.5.0. Replace the repository files, commit, then
+use Manage Extensions -> Update and reload.

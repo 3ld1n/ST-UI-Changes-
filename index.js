@@ -1002,31 +1002,26 @@ function patchGuidedResponseButton() {
     const button = document.querySelector('#gg_response_button');
     if (!button) return;
 
-    // Replace the dog icon with a neutral "guided reply" speech-bubble icon.
-    const icon = button.querySelector('i');
-    if (icon) {
-        icon.classList.remove('fa-dog');
-        icon.classList.add('fa-comment-dots');
-    }
-
+    /*
+       Guided Generations puts the Font Awesome icon classes directly on the
+       button element itself (not on a child <i>). Replace the dog there.
+    */
+    button.classList.remove('fa-dog');
+    button.classList.add('fa-comment-dots');
     button.title = 'Guided Response';
     button.setAttribute('aria-label', 'Guided Response');
 
-    // Guided Generations can recreate this button dynamically, so patch each
-    // newly-created DOM instance exactly once.
+    // GG can recreate its toolbar; patch each new button instance once.
     if (button.dataset.emGuidedResponsePatched === 'true') return;
     button.dataset.emGuidedResponsePatched = 'true';
 
     /*
-       Use capture phase + stopImmediatePropagation so the button cannot get
-       broken by stale listeners after the Guided Generations toolbar is moved
-       into the Eldin Mobile UI tray.
+       Call Guided Generations' own exported guidedResponse() function.
 
-       We still call Guided Generations' REAL implementation. This preserves:
-       - typed guidance from #send_textarea
-       - its prompt/depth/settings behavior
-       - group-member selection
-       - its native generation logic
+       IMPORTANT: do NOT close the Eldin tool tray here. GG's group picker
+       measures #gg-action-button-container when it opens. Hiding the tray
+       before that asynchronous picker is created can move the picker offscreen
+       or make it appear to never open.
     */
     button.addEventListener('click', async (event) => {
         event.preventDefault();
@@ -1041,9 +1036,7 @@ function patchGuidedResponseButton() {
         }
 
         try {
-            const generation = guidedResponse();
-            closeToolTray();
-            await generation;
+            await guidedResponse();
         } catch (error) {
             console.error(`[${MODULE}] Guided Response failed`, error);
             globalThis.toastr?.error?.('Guided Response failed. Check the console for details.');
