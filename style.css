@@ -1,0 +1,1000 @@
+/* =========================================================
+   ELDIN MOBILE UI v1.1.0
+   Mobile-only SillyTavern chat redesign
+   ========================================================= */
+
+@media screen and (max-width: 1000px) {
+
+    body.em-mobile-ui {
+        --eldin-bg: #101012;
+        --eldin-panel: rgba(28, 28, 32, 0.78);
+        --eldin-border: rgba(255, 255, 255, 0.09);
+        --eldin-user: rgba(120, 85, 190, 0.22);
+        --eldin-purple: #8d63ed;
+        --eldin-purple-soft: rgba(141, 99, 237, 0.20);
+        --eldin-glass: rgba(24, 24, 28, 0.94);
+        --eldin-glass-2: rgba(35, 35, 42, 0.98);
+        --eldin-muted: rgba(255, 255, 255, 0.48);
+
+        /* Smaller permanent header than v1.0 */
+        --topBarBlockSize: 56px !important;
+
+        background: var(--eldin-bg) !important;
+    }
+
+    body.em-mobile-ui #bg1 {
+        opacity: 0 !important;
+    }
+
+    /* =====================================================
+       COMPACT MOBILE HEADER
+       ===================================================== */
+
+    body.em-mobile-ui #top-bar {
+        width: 100% !important;
+        height: var(--topBarBlockSize) !important;
+        min-height: var(--topBarBlockSize) !important;
+        margin: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        padding: 4px 10px !important;
+
+        display: flex !important;
+        align-items: center !important;
+
+        background: rgba(16, 16, 18, 0.965) !important;
+        border: 0 !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.045) !important;
+        box-shadow: none !important;
+
+        backdrop-filter: blur(18px) !important;
+        -webkit-backdrop-filter: blur(18px) !important;
+
+        z-index: 3010 !important;
+    }
+
+    #em-mobile-header {
+        width: 100%;
+        min-width: 0;
+
+        display: grid;
+        grid-template-columns: 38px minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .em-header-avatar {
+        width: 36px;
+        height: 36px;
+        min-width: 36px;
+
+        border-radius: 50%;
+        overflow: hidden;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        background: rgba(255, 255, 255, 0.065);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        color: rgba(255, 255, 255, 0.72);
+    }
+
+    .em-header-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .em-header-avatar i {
+        font-size: 17px;
+    }
+
+    .em-header-text {
+        min-width: 0;
+        overflow: hidden;
+    }
+
+    .em-header-title {
+        color: var(--SmartThemeBodyColor, #f4f4f4);
+        font-size: 15.5px;
+        line-height: 1.12;
+        font-weight: 700;
+
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .em-header-subtitle {
+        margin-top: 2px;
+
+        color: var(--eldin-muted);
+        font-size: 9.5px;
+        line-height: 1.15;
+
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .em-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .em-ui-button {
+        -webkit-appearance: none;
+        appearance: none;
+
+        border: 0;
+        padding: 0;
+        margin: 0;
+
+        font: inherit;
+        color: inherit;
+        background: transparent;
+
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .em-header-action {
+        width: 35px;
+        height: 35px;
+        min-width: 35px;
+
+        border-radius: 11px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        color: rgba(255, 255, 255, 0.82);
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    .em-close-button {
+        font-size: 25px;
+        line-height: 1;
+        font-weight: 300;
+        padding-bottom: 2px;
+    }
+
+    .em-menu-button {
+        flex-direction: column;
+        gap: 3px;
+    }
+
+    .em-menu-button span {
+        width: 16px;
+        height: 1.8px;
+        border-radius: 999px;
+        background: currentColor;
+        display: block;
+    }
+
+    /* =====================================================
+       TOP SILLYTAVERN ICON TRAY — ONE HORIZONTAL ROW
+       It overlays the header instead of consuming chat height.
+       ===================================================== */
+
+    body.em-mobile-ui #top-settings-holder {
+        position: fixed !important;
+
+        /* JS supplies the real top-bar screen position. */
+        top: calc(var(--em-topbar-top, 0px) + 4px) !important;
+        left: 8px !important;
+        right: 49px !important;
+
+        width: auto !important;
+        height: 48px !important;
+        min-height: 48px !important;
+
+        margin: 0 !important;
+        padding: 5px 6px !important;
+
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+        justify-content: space-around !important;
+        gap: 2px !important;
+
+        background: rgba(31, 31, 38, 0.985) !important;
+        border: 1px solid rgba(255, 255, 255, 0.095) !important;
+        border-radius: 15px !important;
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.38) !important;
+
+        backdrop-filter: blur(22px) !important;
+        -webkit-backdrop-filter: blur(22px) !important;
+
+        opacity: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+        transform: translateY(-4px) scale(0.99) !important;
+        transform-origin: top right !important;
+
+        transition:
+            opacity 135ms ease,
+            transform 135ms ease,
+            visibility 135ms ease !important;
+
+        z-index: 3990 !important;
+    }
+
+    body.em-mobile-ui.em-top-menu-open #top-settings-holder {
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+        transform: translateY(0) scale(1) !important;
+    }
+
+    body.em-mobile-ui #top-settings-holder > .drawer {
+        position: static !important;
+
+        width: 31px !important;
+        min-width: 31px !important;
+        max-width: 31px !important;
+        height: 36px !important;
+        min-height: 36px !important;
+
+        margin: 0 !important;
+        padding: 0 !important;
+        flex: 0 0 31px !important;
+    }
+
+    body.em-mobile-ui #top-settings-holder .drawer-header,
+    body.em-mobile-ui #top-settings-holder .drawer-toggle {
+        width: 31px !important;
+        min-width: 31px !important;
+        height: 36px !important;
+        min-height: 36px !important;
+
+        margin: 0 !important;
+        padding: 0 !important;
+
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    body.em-mobile-ui #top-settings-holder .drawer-icon {
+        width: auto !important;
+        height: auto !important;
+
+        margin: 0 !important;
+        padding: 3px !important;
+
+        font-size: 19px !important;
+        line-height: 1 !important;
+        opacity: 0.73 !important;
+    }
+
+    body.em-mobile-ui #top-settings-holder .drawer-icon.openIcon {
+        opacity: 1 !important;
+    }
+
+    /*
+       Fix the panels shown in the user's screenshots:
+       Group Controls, API, Persona, Extensions, etc. open immediately
+       below the compact header and use the phone width.
+    */
+    body.em-mobile-ui #top-settings-holder .drawer-content {
+        position: fixed !important;
+
+        top: calc(var(--em-topbar-bottom, 56px) + 4px) !important;
+        left: 8px !important;
+        right: 8px !important;
+        bottom: 8px !important;
+
+        width: auto !important;
+        min-width: 0 !important;
+        max-width: none !important;
+        height: auto !important;
+        max-height: none !important;
+
+        margin: 0 !important;
+        transform: none !important;
+
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        overscroll-behavior: contain !important;
+
+        z-index: 3985 !important;
+    }
+
+    /* =====================================================
+       CHAT / BUBBLES
+       ===================================================== */
+
+    body.em-mobile-ui #chat {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+    }
+
+    body.em-mobile-ui.bubblechat .mes,
+    body.em-mobile-ui.bubblechat .mes[is_user="true"] {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    body.em-mobile-ui .mes[is_user="false"] .mes_block {
+        background: var(--eldin-panel) !important;
+        border: 1px solid var(--eldin-border) !important;
+        border-radius: 22px !important;
+
+        padding: 14px 16px !important;
+
+        backdrop-filter: blur(16px) !important;
+        -webkit-backdrop-filter: blur(16px) !important;
+    }
+
+    body.em-mobile-ui .mes[is_user="true"] .mes_block {
+        background: var(--eldin-user) !important;
+        border: 1px solid rgba(170, 125, 255, 0.22) !important;
+        border-radius: 20px !important;
+
+        padding: 10px 15px !important;
+
+        width: fit-content !important;
+        max-width: 76% !important;
+        margin: 0 !important;
+    }
+
+    /* Character and user avatars now match exactly. */
+    body.em-mobile-ui .mesAvatarWrapper .avatar,
+    body.em-mobile-ui .mesAvatarWrapper .avatar img {
+        width: 46px !important;
+        height: 46px !important;
+        min-width: 46px !important;
+        min-height: 46px !important;
+
+        border-radius: 50% !important;
+        object-fit: cover !important;
+    }
+
+    body.em-mobile-ui .mes_text {
+        line-height: 1.55 !important;
+        letter-spacing: 0 !important;
+    }
+
+    body.em-mobile-ui.bubblechat .mes[is_user="true"] {
+        display: flex !important;
+        flex-direction: row-reverse !important;
+        justify-content: flex-start !important;
+        align-items: flex-end !important;
+        gap: 9px !important;
+    }
+
+    body.em-mobile-ui.bubblechat .mes[is_user="true"] .mesAvatarWrapper {
+        margin: 0 2px 3px 0 !important;
+        padding: 0 !important;
+        flex: 0 0 auto !important;
+    }
+
+    body.em-mobile-ui.bubblechat .mes[is_user="false"] .mesAvatarWrapper {
+        margin-right: 10px !important;
+    }
+
+    /* Hide native swipe decorations; gesture/generation functionality remains. */
+    body.em-mobile-ui .swipe_left,
+    body.em-mobile-ui .swipe_right,
+    body.em-mobile-ui .swipes-counter,
+    body.em-mobile-ui .swipeRightBlock {
+        display: none !important;
+    }
+
+    body.em-mobile-ui .mes {
+        --swipeCounterHeight: 0px !important;
+        --swipeCounterMargin: 0px !important;
+    }
+
+    /* Standalone edit pen disappears... */
+    body.em-mobile-ui .mes_buttons > .mes_edit {
+        display: none !important;
+    }
+
+    /* ...but the same live button remains when JS moves it into (...). */
+    body.em-mobile-ui .mes_buttons .extraMesButtons > .mes_edit,
+    body.em-mobile-ui .extraMesButtons > .em-edit-in-menu {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+
+    body.em-mobile-ui .extraMesButtonsHint {
+        opacity: 0.58 !important;
+    }
+
+    /* =====================================================
+       COMPACT MESSENGER COMPOSER
+       ===================================================== */
+
+    body.em-mobile-ui #form_sheld {
+        width: 100% !important;
+        padding: 0 10px max(7px, env(safe-area-inset-bottom)) !important;
+        margin: 0 !important;
+        overflow: visible !important;
+    }
+
+    body.em-mobile-ui #send_form {
+        box-sizing: border-box !important;
+        position: relative !important;
+
+        width: 100% !important;
+        max-width: 100% !important;
+        min-height: 64px !important;
+
+        margin: 0 !important;
+        padding: 6px 7px !important;
+
+        display: block !important;
+
+        background: rgba(25, 25, 29, 0.965) !important;
+        border: 1px solid rgba(255, 255, 255, 0.10) !important;
+        border-radius: 27px !important;
+
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.24) !important;
+
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
+    }
+
+    body.em-mobile-ui #send_form:has(#send_textarea:focus-visible) {
+        outline: none !important;
+        border-color: rgba(141, 99, 237, 0.36) !important;
+
+        box-shadow:
+            0 10px 28px rgba(0, 0, 0, 0.24),
+            0 0 0 1px rgba(141, 99, 237, 0.10) !important;
+    }
+
+    body.em-mobile-ui #nonQRFormItems {
+        width: 100% !important;
+        min-width: 0 !important;
+        min-height: 50px !important;
+
+        padding: 0 !important;
+
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 5px !important;
+
+        font-size: initial !important;
+    }
+
+    /*
+       The original left container can disappear because its real children
+       (Quick Persona, Options, extension buttons) are moved elsewhere.
+    */
+    body.em-mobile-ui #leftSendForm {
+        display: none !important;
+    }
+
+    /* ---- REAL Quick Persona extension button ---- */
+
+    #em-persona-slot {
+        order: 0;
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        flex: 0 0 44px;
+    }
+
+    #em-persona-slot:empty {
+        display: none;
+    }
+
+    body.em-mobile-ui #em-persona-slot #quickPersona {
+        position: relative !important;
+
+        width: 44px !important;
+        height: 44px !important;
+        min-width: 44px !important;
+
+        margin: 0 !important;
+        padding: 0 !important;
+
+        order: 0 !important;
+        display: block !important;
+    }
+
+    body.em-mobile-ui #em-persona-slot #quickPersonaImg {
+        width: 44px !important;
+        height: 44px !important;
+
+        border-radius: 50% !important;
+        object-fit: cover !important;
+        box-shadow: none !important;
+
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    }
+
+    body.em-mobile-ui #em-persona-slot #quickPersonaCaret {
+        top: auto !important;
+        right: -1px !important;
+        bottom: 0 !important;
+
+        width: 16px !important;
+        height: 16px !important;
+
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+
+        border-radius: 50% !important;
+        background: rgba(24, 24, 28, 0.92) !important;
+
+        font-size: 10px !important;
+        text-shadow: none !important;
+    }
+
+    body.em-mobile-ui #send_textarea {
+        order: 1 !important;
+        flex: 1 1 auto !important;
+
+        min-width: 0 !important;
+        width: auto !important;
+        max-width: none !important;
+
+        margin: 0 !important;
+        padding: 10px 7px !important;
+
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        outline: none !important;
+
+        font-size: 16px !important;
+        line-height: 1.35 !important;
+        max-height: 120px !important;
+    }
+
+    .em-tools-toggle {
+        order: 2;
+
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
+
+        border-radius: 50%;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        color: rgba(255, 255, 255, 0.75);
+        background: transparent;
+
+        transition: 140ms ease;
+    }
+
+    .em-tools-toggle i {
+        font-size: 18px;
+    }
+
+    body.em-mobile-ui.em-tools-open .em-tools-toggle {
+        color: #fff;
+        background: var(--eldin-purple-soft);
+        transform: rotate(-8deg);
+    }
+
+    body.em-mobile-ui #rightSendForm {
+        order: 3 !important;
+
+        width: 48px !important;
+        min-width: 48px !important;
+        height: 48px !important;
+
+        padding: 0 !important;
+        margin: 0 !important;
+
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex-wrap: nowrap !important;
+    }
+
+    /* User asked to remove the native quick impersonate/continue duplicates. */
+    body.em-mobile-ui #rightSendForm > #mes_impersonate,
+    body.em-mobile-ui #rightSendForm > #mes_continue {
+        display: none !important;
+    }
+
+    body.em-mobile-ui #send_but,
+    body.em-mobile-ui #mes_stop {
+        width: 46px !important;
+        height: 46px !important;
+        min-width: 46px !important;
+        min-height: 46px !important;
+
+        margin: 0 !important;
+        padding: 0 !important;
+
+        align-items: center;
+        justify-content: center;
+
+        border-radius: 50% !important;
+
+        background: var(--eldin-purple) !important;
+        color: #fff !important;
+
+        opacity: 1 !important;
+        filter: none !important;
+
+        box-shadow: 0 6px 16px rgba(90, 48, 180, 0.32) !important;
+    }
+
+    body.em-mobile-ui #send_but {
+        display: flex !important;
+    }
+
+    body.em-mobile-ui #send_but .fa-solid,
+    body.em-mobile-ui #mes_stop .fa-solid {
+        font-size: 20px !important;
+        color: #fff !important;
+    }
+
+    body.em-mobile-ui #send_form .mes_stop[style*="display: none"],
+    body.em-mobile-ui #send_form .mes_stop.displayNone {
+        display: none !important;
+    }
+
+    /* =====================================================
+       WAND / TOOL TRAY
+       ===================================================== */
+
+    #em-tool-tray {
+        position: absolute;
+
+        left: 0;
+        right: 0;
+        bottom: calc(100% + 9px);
+
+        max-height: min(40vh, 300px);
+        overflow: visible;
+
+        padding: 8px;
+
+        background: rgba(28, 28, 34, 0.985);
+        border: 1px solid rgba(255, 255, 255, 0.10);
+        border-radius: 20px;
+
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.42);
+
+        backdrop-filter: blur(22px);
+        -webkit-backdrop-filter: blur(22px);
+
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+
+        transform: translateY(7px) scale(0.99);
+        transform-origin: bottom center;
+
+        transition:
+            opacity 140ms ease,
+            transform 140ms ease,
+            visibility 140ms ease;
+
+        z-index: 4020;
+    }
+
+    body.em-mobile-ui.em-tools-open #em-tool-tray {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+
+        transform: translateY(0) scale(1);
+    }
+
+    #em-tool-row {
+        width: 100%;
+
+        display: flex;
+        align-items: center;
+        gap: 7px;
+
+        overflow-x: auto;
+        overflow-y: visible;
+
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #em-tool-row::-webkit-scrollbar {
+        display: none;
+    }
+
+    .em-tray-slot {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+
+        flex: 0 0 auto;
+    }
+
+    .em-tray-slot:empty {
+        display: none;
+    }
+
+    .em-grow-slot {
+        min-width: 0;
+    }
+
+    /* ---- Actual native SillyTavern options button, not a proxy ---- */
+
+    body.em-mobile-ui #em-native-options-slot #options_button,
+    body.em-mobile-ui #em-left-extras-slot > * {
+        position: static !important;
+
+        width: 42px !important;
+        height: 42px !important;
+        min-width: 42px !important;
+        min-height: 42px !important;
+
+        margin: 0 !important;
+        padding: 0 !important;
+
+        border-radius: 13px !important;
+
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+
+        background: rgba(255, 255, 255, 0.055) !important;
+        border: 1px solid rgba(255, 255, 255, 0.075) !important;
+
+        color: rgba(255, 255, 255, 0.84) !important;
+        font-size: 19px !important;
+
+        opacity: 1 !important;
+        flex: 0 0 42px !important;
+    }
+
+    /* Native ST menu is still anchored by Popper to the *real* options button. */
+    body.em-mobile-ui #options {
+        max-width: calc(100vw - 20px) !important;
+        width: min(360px, calc(100vw - 20px)) !important;
+
+        border-radius: 17px !important;
+        overflow: hidden !important;
+
+        z-index: 5000 !important;
+    }
+
+    /* ---- Guided Generations: move its WHOLE live container into tray ---- */
+
+    body.em-mobile-ui #em-gg-slot #gg-action-button-container {
+        position: static !important;
+
+        width: auto !important;
+        max-width: none !important;
+        min-width: 0 !important;
+
+        margin: 0 !important;
+        padding: 0 !important;
+
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+        gap: 7px !important;
+
+        background: transparent !important;
+        border: 0 !important;
+        box-shadow: none !important;
+    }
+
+    body.em-mobile-ui #em-gg-slot #gg-menu-buttons-container,
+    body.em-mobile-ui #em-gg-slot #gg-qr-container,
+    body.em-mobile-ui #em-gg-slot #gg-regular-buttons-container {
+        width: auto !important;
+        min-width: 0 !important;
+
+        margin: 0 !important;
+        padding: 0 !important;
+
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 7px !important;
+
+        background: transparent !important;
+    }
+
+    body.em-mobile-ui #em-gg-slot .gg-menu-button,
+    body.em-mobile-ui #em-gg-slot .gg-action-button {
+        position: relative !important;
+
+        width: 42px !important;
+        height: 42px !important;
+        min-width: 42px !important;
+        min-height: 42px !important;
+
+        margin: 0 !important;
+        padding: 0 !important;
+
+        border-radius: 13px !important;
+
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+
+        background: rgba(255, 255, 255, 0.055) !important;
+        border: 1px solid rgba(255, 255, 255, 0.075) !important;
+
+        color: rgba(255, 255, 255, 0.84) !important;
+        font-size: 18px !important;
+
+        opacity: 1 !important;
+        flex: 0 0 42px !important;
+    }
+
+    /* The user doesn't use Guided Impersonate. */
+    body.em-mobile-ui #em-gg-slot #gg_impersonate_button,
+    body.em-mobile-ui #em-gg-slot #gg_impersonate_button_2nd,
+    body.em-mobile-ui #em-gg-slot #gg_impersonate_button_3rd {
+        display: none !important;
+    }
+
+    body.em-mobile-ui #em-gg-slot #pg_guide_counter_span {
+        margin-left: 2px !important;
+        font-size: 11px !important;
+        line-height: 1 !important;
+    }
+
+    /* If Guided Generations integrates Quick Reply, keep those real QR buttons too. */
+    body.em-mobile-ui #em-gg-slot #qr--bar,
+    body.em-mobile-ui #em-fallback-qr-slot #qr--bar {
+        position: static !important;
+
+        width: auto !important;
+        max-width: none !important;
+        min-height: 0 !important;
+
+        margin: 0 !important;
+        padding: 0 !important;
+
+        background: transparent !important;
+        border: 0 !important;
+        box-shadow: none !important;
+    }
+
+    body.em-mobile-ui #em-gg-slot #qr--bar .qr--buttons,
+    body.em-mobile-ui #em-fallback-qr-slot #qr--bar .qr--buttons {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+        gap: 7px !important;
+
+        overflow: visible !important;
+        padding: 0 !important;
+    }
+
+    body.em-mobile-ui #em-gg-slot #qr--bar .qr--button,
+    body.em-mobile-ui #em-fallback-qr-slot #qr--bar .qr--button {
+        flex: 0 0 auto !important;
+
+        min-height: 42px !important;
+        border-radius: 13px !important;
+
+        background: rgba(255, 255, 255, 0.055) !important;
+        border: 1px solid rgba(255, 255, 255, 0.075) !important;
+
+        box-shadow: none !important;
+    }
+
+    /* =====================================================
+       QUICK PERSONA POPUP POLISH
+       ===================================================== */
+
+    body.em-mobile-ui #quickPersonaMenu {
+        z-index: 5000 !important;
+        border-radius: 18px !important;
+        overflow: hidden;
+    }
+
+    /* =====================================================
+       SMALLER PHONES
+       ===================================================== */
+
+    @media screen and (max-width: 390px) {
+        body.em-mobile-ui {
+            --topBarBlockSize: 54px !important;
+        }
+
+        #em-mobile-header {
+            grid-template-columns: 36px minmax(0, 1fr) auto;
+            gap: 7px;
+        }
+
+        .em-header-avatar {
+            width: 34px;
+            height: 34px;
+            min-width: 34px;
+        }
+
+        .em-header-action {
+            width: 33px;
+            height: 33px;
+            min-width: 33px;
+            border-radius: 10px;
+        }
+
+        .em-header-title {
+            font-size: 15px;
+        }
+
+        .em-header-subtitle {
+            font-size: 9px;
+        }
+
+        body.em-mobile-ui #top-settings-holder {
+            right: 46px !important;
+            height: 46px !important;
+            min-height: 46px !important;
+            padding-left: 4px !important;
+            padding-right: 4px !important;
+        }
+
+        body.em-mobile-ui #top-settings-holder > .drawer,
+        body.em-mobile-ui #top-settings-holder .drawer-header,
+        body.em-mobile-ui #top-settings-holder .drawer-toggle {
+            width: 29px !important;
+            min-width: 29px !important;
+        }
+
+        body.em-mobile-ui #top-settings-holder > .drawer {
+            flex-basis: 29px !important;
+        }
+
+        body.em-mobile-ui #top-settings-holder .drawer-icon {
+            font-size: 18px !important;
+        }
+
+        #em-persona-slot,
+        body.em-mobile-ui #em-persona-slot #quickPersona,
+        body.em-mobile-ui #em-persona-slot #quickPersonaImg {
+            width: 42px !important;
+            height: 42px !important;
+            min-width: 42px !important;
+        }
+
+        #em-persona-slot {
+            flex-basis: 42px !important;
+        }
+
+        .em-tools-toggle {
+            width: 38px;
+            height: 38px;
+            min-width: 38px;
+        }
+
+        body.em-mobile-ui #rightSendForm {
+            width: 46px !important;
+            min-width: 46px !important;
+        }
+
+        body.em-mobile-ui #send_but,
+        body.em-mobile-ui #mes_stop {
+            width: 44px !important;
+            height: 44px !important;
+            min-width: 44px !important;
+            min-height: 44px !important;
+        }
+    }
+}
