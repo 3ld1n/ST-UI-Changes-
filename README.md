@@ -1,96 +1,86 @@
-# Eldin Mobile UI v1.2.0
+# Eldin Mobile UI v1.3.0
 
-Mobile-focused SillyTavern UI extension.
+## Fixes in this release
 
-## New in v1.2
+### Top panels: robust full-screen mobile stage
+The top icon tray remains compact, but tapping any SillyTavern top icon now
+captures the real native drawer-content reference before SillyTavern animates
+or reparents it. After SillyTavern runs its own initialization, the exact live
+panel is moved into the dedicated mobile stage.
 
-### Full-size mobile settings panels
-Top-bar icons still live in the compact one-row tray, but their real native
-SillyTavern drawer content is now temporarily moved into a dedicated mobile
-panel stage. This prevents API, Extensions, World Info, Persona, Character /
-Group controls, etc. from being squeezed into the tiny icon container.
+This fixes the "2 px line only" problem seen in v1.2.
 
-The opened panel:
-- uses almost the full phone width and height
-- keeps the real native SillyTavern controls and listeners
-- can be closed with its own X or by tapping the dimmed background
-- is returned to its original SillyTavern drawer when closed
+The stage is explicitly sized with fixed top/left/right/bottom coordinates,
+a minimum height, flex layout, and a scrollable body.
 
-### Tap header for current chat details
-Tap the header avatar or title:
-- group chat -> opens the current group's controls
-- single character chat -> opens the current character editor
+### Message avatar behavior restored
+- Tap a character NAME -> open that character's controls/card.
+- Tap the round character AVATAR -> SillyTavern's normal enlarged image behavior.
 
-### Tap a character in the chat
-Tap an AI character's name or avatar:
-- single chat -> opens that character
-- group chat -> opens that specific group member's character definition
+### Header auto-hide strengthened for iPhone Safari
+The header now reacts to:
+- accumulated #chat scroll movement
+- actual iOS touch/finger direction as a fallback
 
-This intentionally replaces SillyTavern's default avatar-zoom tap on AI
-message avatars for this mobile theme.
+Scroll forward/down through the conversation -> header hides.
+Reverse direction -> header returns.
 
-### Auto-hide header while reading
-Scrolling down hides the header to give the chat more vertical room.
-Scrolling upward brings it back.
+### Smart Guided Swipe
+The existing Guided Swipe button now behaves as:
 
-The header stays visible while menus or full-size settings panels are open.
+1. If a saved swipe exists ahead:
+   - move to that saved swipe
+   - DO NOT generate a new output
+   - DO NOT consume/alter typed guidance
 
-### Long-press message actions
-The visible (...) button is removed.
-Long-press a message bubble to open the same native Message Actions menu.
+2. If already on the final saved swipe:
+   - let Guided Generations' original handler run
+   - typed text in the composer is injected normally
+   - a genuinely new guided swipe is generated
 
-The real Edit action is still moved inside Message Actions.
+This means you can move:
+1 -> 2 -> 3 -> 2 -> 3
+without losing swipe 3, and only generate swipe 4 when you advance past the
+last existing swipe.
 
-### Previous swipe button
-A new Back/Previous Swipe button is inserted immediately beside Guided Swipe
-when Guided Generations is present.
+The Previous Swipe button uses SillyTavern's real context.swipe.left() when
+available.
 
-It uses SillyTavern's real hidden .swipe_left button, so it returns to an
-earlier generated swipe instead of generating a new one.
+### Emergency Safari safe mode
+Starting with v1.3, if this extension ever breaks the UI again, reload
+SillyTavern with:
 
-The button disables itself when there is no earlier swipe.
+    ?eldinui=off
 
-### Composer polish
-- Keeps the real Quick Persona button
-- Keeps the Wand tray
-- Keeps Guided Generations buttons live
-- Keeps the native SillyTavern Options button live
-- Input text/placeholder is explicitly left-aligned inside the actual text area
-  instead of visually floating in the center
-- Native Quick Impersonate / Continue duplicates stay hidden
+Example:
 
-## Updating manually
+    http://YOUR-SILLYTAVERN-ADDRESS:8000/?eldinui=off
 
-Replace the files in:
+If your URL already has a query string, append:
 
-    SillyTavern/data/<your-user-handle>/extensions/eldin-mobile-ui/
+    &eldinui=off
 
-with:
+The extension's JavaScript will skip initialization, and because the theme CSS
+is scoped behind the class that JavaScript adds, SillyTavern returns to its
+normal UI for that page load.
+
+You can then open Manage Extensions and disable/update Eldin Mobile UI without
+touching the laptop files.
+
+IMPORTANT: this rescue switch starts with v1.3; it cannot retroactively disable
+v1.2.
+
+## GitHub update
+
+Keep the repository if you want future updates from GitHub.
+
+Replace:
 - manifest.json
 - index.js
 - style.css
 - README.md
 
-Then reload SillyTavern.
+Commit the changes, then use SillyTavern -> Manage Extensions -> Update.
 
-## GitHub workflow
-
-Keep the GitHub repository if you want SillyTavern to keep updating this
-extension from GitHub.
-
-After an extension is installed, SillyTavern has a local copy, so deleting the
-GitHub repository would not instantly remove the installed extension.
-However, future Update checks would lose their source.
-
-For easy iPhone updates:
-1. Keep the extension repository.
-2. Replace index.js, style.css, manifest.json and README.md in GitHub.
-3. Commit the changes.
-4. Open SillyTavern -> Extensions -> Manage Extensions -> Update.
-5. Reload the page.
-
-## Notes
-
-- Mobile-only at widths up to 1000px.
-- No character cards, chats, prompts, API keys, or user data are stored in this
-  extension.
+## Mobile only
+The redesign is scoped to screens up to 1000px wide.

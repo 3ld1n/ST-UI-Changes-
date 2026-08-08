@@ -1,5 +1,6 @@
 const MODULE = 'eldin_mobile_ui';
 const MOBILE_QUERY = '(max-width: 1000px)';
+const SAFE_MODE = new URLSearchParams(window.location.search).get('eldinui') === 'off';
 
 let initialized = false;
 let eventsBound = false;
@@ -351,50 +352,51 @@ function closePanelStage({ collapse = true } = {}) {
     scheduleGeometryUpdate();
 }
 
-function stageDrawerAfterNativeToggle(drawer) {
+function stageDrawerAfterNativeToggle(drawer, contentRef = null) {
+    const content = contentRef || drawer?.querySelector('.drawer-content');
+    if (!drawer || !content) return;
+
+    // Let SillyTavern run its own click/open handler first (some panels update
+    // their contents when opened), then move the exact live panel into our
+    // full-size mobile stage. We do not depend on openDrawer/display state:
+    // the user's tap itself is the intent to open the panel.
     window.setTimeout(() => {
-        const content =
-            drawer?.querySelector(':scope > .drawer-content') ||
-            (activePanelStage?.drawer === drawer ? activePanelStage.content : null);
-
-        if (!content) return;
-
-        const isOpen =
-            content.classList.contains('openDrawer') ||
-            getComputedStyle(content).display !== 'none';
-
-        if (isOpen) {
-            stageNativePanel(drawer, content);
-        }
-    }, 0);
+        stageNativePanel(drawer, content);
+    }, 70);
 }
 
 function bindTopDrawerStaging() {
     document.addEventListener('click', (event) => {
         if (!(event.target instanceof Element)) return;
 
-        const toggle = event.target.closest('#top-settings-holder .drawer > .drawer-toggle');
+        const toggle = event.target.closest('#top-settings-holder .drawer-toggle');
         if (!toggle) return;
 
         const drawer = toggle.closest('.drawer');
         if (!drawer) return;
 
-        stageDrawerAfterNativeToggle(drawer);
-    });
+        // Keep a direct reference before SillyTavern potentially reparents or
+        // animates the drawer content.
+        const content = drawer.querySelector('.drawer-content');
+        if (!content) return;
+
+        stageDrawerAfterNativeToggle(drawer, content);
+    }, false);
 }
 
 function openCurrentChatDetails() {
     const holder = document.querySelector('#rightNavHolder');
-    const toggle = holder?.querySelector(':scope > .drawer-toggle');
+    const toggle = holder?.querySelector(':scope > .drawer-toggle, .drawer-toggle');
     const panel = document.querySelector('#right-nav-panel');
 
-    if (!holder || !toggle || !panel) return;
+    if (!holder || !panel) return;
 
     revealHeader();
     closeToolTray();
     closeTopMenu();
 
     const finishOpen = () => {
+        // Group chat: select the group's own controls page.
         document.querySelector('#rm_button_selected_ch')?.click();
         stageNativePanel(holder, panel);
     };
@@ -404,15 +406,12 @@ function openCurrentChatDetails() {
         return;
     }
 
-    const alreadyOpen =
-        panel.classList.contains('openDrawer') ||
-        getComputedStyle(panel).display !== 'none';
-
-    if (!alreadyOpen) {
+    // Allow SillyTavern to perform any native initialization first.
+    if (toggle) {
         toggle.click();
     }
 
-    window.setTimeout(finishOpen, 30);
+    window.setTimeout(finishOpen, 90);
 }
 
 function openMessageCharacter(message) {
@@ -493,7 +492,7 @@ function bindMessageCharacterClicks() {
         if (!(event.target instanceof Element)) return;
 
         const trigger = event.target.closest(
-            '.mes[is_user="false"] .name_text, .mes[is_user="false"] .mesAvatarWrapper .avatar'
+            '.mes[is_user="false"] .name_text'
         );
 
         if (!trigger) return;
@@ -512,26 +511,132 @@ function bindAutoHideHeader() {
     if (!chat || chat.dataset.emAutoHideBound === '1') return;
 
     chat.dataset.emAutoHideBound = '1';
-    lastChatScrollTop = chat.scrollTop;
+
+    let previousScrollTop = chat.scrollTop;
+    let accumulatedDelta = 0;
+    let touchY = null;
+
+    const menusAreOpen = () =>
+        document.body.classList.contains('em-panel-open') ||
+        document.body.classList.contains('em-top-menu-open') ||
+        document.body.classList.contains('em-tools-open');
 
     chat.addEventListener('scroll', () => {
         const current = chat.scrollTop;
-        const delta = current - lastChatScrollTop;
+        const delta = current - previousScrollTop;
 
-        if (document.body.classList.contains('em-panel-open')) {
+        if (menusAreOpen()) {
             revealHeader();
-            lastChatScrollTop = current;
+            previousScrollTop = current;
+            accumulatedDelta = 0;
             return;
         }
 
-        if (delta > 7 && current > 90) {
-            hideHeader();
-        } else if (delta < -6 || current < 45) {
-            revealHeader();
+        // Accumulate small iOS scroll increments instead of requiring one
+        // single scroll event to exceed a threshold.
+        if (
+            accumulatedDelta === 0 ||
+            Math.sign(delta) === Math.sign(accumulatedDelta)
+        ) {
+            accumulatedDelta += delta;
+        } else {
+            accumulatedDelta = delta;
         }
 
-        lastChatScrollTop = current;
+        if (accumulatedDelta > 18 && current > 35) {
+            hideHeader();
+            accumulatedDelta = 0;
+        } else if (accumulatedDelta < -14 || current < 18) {
+            revealHeader();
+            accumulatedDelta = 0;
+        }
+
+        previousScrollTop = current;
     }, { passive: true });
+
+    // iOS Safari fallback: react to the actual finger direction as well.
+    chat.addEventListener('touchstart', (event) => {
+        touchY = event.touches?.[0]?.clientY ?? null;
+    }, { passive: true });
+
+    chat.addEventListener('touchmove', (event) => {
+        if (touchY === null || menusAreOpen()) return;
+
+        const y = event.touches?.[0]?.clientY;
+        if (typeof y !== 'number') return;
+
+        const fingerDelta = y - touchY;
+
+        // Finger moving upward -> user is moving forward/down through chat.
+        if (fingerDelta < -18 && chat.scrollTop > 25) {
+            hideHeader();
+            touchY = y;
+        }
+        // Finger moving downward -> reveal navigation.
+        else if (fingerDelta > 16) {
+            revealHeader();
+            touchY = y;
+        }
+    }, { passive: true });
+
+    chat.addEventListener('touchend', () => {
+        touchY = null;
+    }, { passive: true });
+
+    chat.addEventListener('touchcancel', () => {
+        touchY = null;
+    }, { passive: true });
+}
+
+function getLastSwipeState() {
+    const ctx = getContext();
+    const message = Array.isArray(ctx?.chat) ? ctx.chat.at(-1) : null;
+
+    if (!message || message.is_user || message.is_system) {
+        return {
+            ctx,
+            message,
+            current: 0,
+            count: 0,
+            canGoBack: false,
+            hasExistingNext: false,
+        };
+    }
+
+    const swipes = Array.isArray(message.swipes)
+        ? message.swipes
+        : (typeof message.mes === 'string' ? [message.mes] : []);
+
+    const current = Number.isFinite(Number(message.swipe_id))
+        ? Number(message.swipe_id)
+        : 0;
+
+    return {
+        ctx,
+        message,
+        current,
+        count: swipes.length,
+        canGoBack: current > 0,
+        hasExistingNext: current >= 0 && current < swipes.length - 1,
+    };
+}
+
+async function goToPreviousSwipe() {
+    const { ctx, canGoBack } = getLastSwipeState();
+    if (!canGoBack) return;
+
+    if (typeof ctx?.swipe?.left === 'function') {
+        await ctx.swipe.left();
+    } else {
+        const nativeLeft = document.querySelector('.last_mes .swipe_left');
+        nativeLeft?.dispatchEvent(new MouseEvent('click', {
+            bubbles: true,
+            cancelable: true,
+            view: window,
+        }));
+    }
+
+    window.setTimeout(updateSwipeNavigationButtons, 60);
 }
 
 function buildPreviousSwipeButton() {
@@ -543,19 +648,7 @@ function buildPreviousSwipeButton() {
         'fa-solid fa-backward'
     );
     button.classList.add('em-history-swipe-button');
-
-    button.addEventListener('click', () => {
-        const nativeLeft = document.querySelector('.last_mes .swipe_left');
-        if (!nativeLeft || button.disabled) return;
-
-        nativeLeft.dispatchEvent(new MouseEvent('click', {
-            bubbles: true,
-            cancelable: true,
-            view: window,
-        }));
-
-        window.setTimeout(updatePreviousSwipeButton, 50);
-    });
+    button.addEventListener('click', goToPreviousSwipe);
 
     const ggSwipe = document.querySelector('#gg_swipe_button');
     if (ggSwipe?.parentElement) {
@@ -563,25 +656,66 @@ function buildPreviousSwipeButton() {
         return;
     }
 
-    const ggSlot = document.querySelector('#em-gg-slot');
-    if (ggSlot) {
-        ggSlot.prepend(button);
-    }
+    document.querySelector('#em-gg-slot')?.prepend(button);
 }
 
-function updatePreviousSwipeButton() {
-    const button = document.querySelector('#em-prev-swipe-button');
-    if (!button) return;
+function bindSmartGuidedSwipeButton() {
+    const ggSwipe = document.querySelector('#gg_swipe_button');
+    if (!ggSwipe || ggSwipe.dataset.emSmartSwipeBound === '1') return;
 
-    const lastMessage =
-        document.querySelector('#chat .mes.last_mes') ||
-        document.querySelector('#chat .mes:last-of-type');
+    ggSwipe.dataset.emSmartSwipeBound = '1';
 
-    const swipeId = Number(lastMessage?.getAttribute('swipeid') ?? 0);
-    const canGoBack = Number.isFinite(swipeId) && swipeId > 0;
+    // Capture phase runs before Guided Generations' own target click handler.
+    // If a saved swipe already exists ahead, use SillyTavern's normal right
+    // navigation and STOP the GG handler so it does not generate anything.
+    // When at the final saved swipe, we allow GG's original click listener to
+    // run unchanged, preserving its typed guidance injection.
+    ggSwipe.addEventListener('click', async (event) => {
+        const state = getLastSwipeState();
 
-    button.disabled = !canGoBack;
-    button.setAttribute('aria-disabled', String(!canGoBack));
+        if (!state.hasExistingNext) {
+            // No saved swipe ahead: let Guided Generations generate the next
+            // one using whatever the user typed in the composer.
+            return;
+        }
+
+        event.preventDefault();
+        event.stopImmediatePropagation();
+
+        if (typeof state.ctx?.swipe?.right === 'function') {
+            await state.ctx.swipe.right();
+        } else {
+            const nativeRight = document.querySelector('.last_mes .swipe_right');
+            nativeRight?.dispatchEvent(new MouseEvent('click', {
+                bubbles: true,
+                cancelable: true,
+                view: window,
+            }));
+        }
+
+        window.setTimeout(updateSwipeNavigationButtons, 60);
+    }, true);
+}
+
+function updateSwipeNavigationButtons() {
+    const state = getLastSwipeState();
+    const previous = document.querySelector('#em-prev-swipe-button');
+    const ggSwipe = document.querySelector('#gg_swipe_button');
+
+    if (previous) {
+        previous.disabled = !state.canGoBack;
+        previous.setAttribute('aria-disabled', String(!state.canGoBack));
+        previous.title = state.canGoBack
+            ? `Previous swipe (${state.current}/${Math.max(1, state.count)})`
+            : 'No previous swipe';
+    }
+
+    if (ggSwipe) {
+        ggSwipe.classList.toggle('em-existing-next-swipe', state.hasExistingNext);
+        ggSwipe.title = state.hasExistingNext
+            ? `Next saved swipe (${state.current + 2}/${state.count})`
+            : 'Guided Swipe — generate a new swipe';
+    }
 }
 
 function ensurePreviousSwipeButton() {
@@ -596,7 +730,8 @@ function ensurePreviousSwipeButton() {
         ggSwipe.parentElement.insertBefore(button, ggSwipe);
     }
 
-    updatePreviousSwipeButton();
+    bindSmartGuidedSwipeButton();
+    updateSwipeNavigationButtons();
 }
 
 function cancelLongPress() {
@@ -999,7 +1134,7 @@ function observeDynamicUi() {
 
         if (messagesChanged) {
             moveAllEditButtonsIntoActions();
-            updatePreviousSwipeButton();
+            updateSwipeNavigationButtons();
         }
 
         if (composerChanged) {
@@ -1039,6 +1174,7 @@ function bindSillyTavernEvents() {
         'ONLINE_STATUS_CHANGED',
         'USER_MESSAGE_RENDERED',
         'CHARACTER_MESSAGE_RENDERED',
+        'MESSAGE_SWIPED',
     ];
 
     for (const key of events) {
@@ -1115,6 +1251,11 @@ async function waitForReady() {
 }
 
 async function init() {
+    if (SAFE_MODE) {
+        console.warn(`[${MODULE}] Safe mode active (?eldinui=off). Extension UI skipped.`);
+        return;
+    }
+
     if (initialized || !isMobileLayout()) return;
 
     const ready = await waitForReady();
@@ -1157,7 +1298,7 @@ async function init() {
         }, delay);
     });
 
-    log('Eldin Mobile UI v1.2.0 loaded.');
+    log('Eldin Mobile UI v1.3.0 loaded.');
 }
 
 init();

@@ -1,5 +1,5 @@
 /* =========================================================
-   ELDIN MOBILE UI v1.2.0
+   ELDIN MOBILE UI v1.3.0
    Mobile-only SillyTavern chat redesign
    ========================================================= */
 
@@ -337,19 +337,25 @@
     }
 
     #em-panel-stage {
-        position: fixed;
+        position: fixed !important;
 
-        top: calc(var(--em-topbar-bottom, 56px) + 5px);
-        left: 7px;
-        right: 7px;
-        bottom: max(7px, env(safe-area-inset-bottom));
+        top: calc(var(--em-topbar-bottom, 56px) + 6px) !important;
+        left: 7px !important;
+        right: 7px !important;
+        bottom: max(7px, env(safe-area-inset-bottom)) !important;
 
-        min-width: 0;
-        width: auto;
-        max-width: none;
+        width: auto !important;
+        min-width: 0 !important;
+        max-width: none !important;
 
-        display: grid;
-        grid-template-rows: 44px minmax(0, 1fr);
+        height: auto !important;
+        min-height: 260px !important;
+        max-height: none !important;
+
+        display: flex !important;
+        flex-direction: column !important;
+
+        box-sizing: border-box !important;
 
         background: rgba(21, 21, 25, 0.985);
         border: 1px solid rgba(255, 255, 255, 0.10);
@@ -391,7 +397,10 @@
     }
 
     #em-panel-stage-header {
-        min-width: 0;
+        width: 100% !important;
+        min-width: 0 !important;
+        min-height: 44px !important;
+        flex: 0 0 44px !important;
 
         display: flex;
         align-items: center;
@@ -438,10 +447,16 @@
     }
 
     #em-panel-stage-body {
-        min-width: 0;
-        min-height: 0;
+        width: 100% !important;
+        min-width: 0 !important;
+        min-height: 0 !important;
 
-        overflow: hidden;
+        flex: 1 1 auto !important;
+
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        overscroll-behavior: contain !important;
+        -webkit-overflow-scrolling: touch;
     }
 
     #em-panel-stage-body > .drawer-content.em-staged-panel {
@@ -457,9 +472,11 @@
         min-width: 0 !important;
         max-width: 100% !important;
 
-        height: 100% !important;
-        min-height: 0 !important;
-        max-height: 100% !important;
+        height: auto !important;
+        min-height: 100% !important;
+        max-height: none !important;
+
+        box-sizing: border-box !important;
 
         margin: 0 !important;
         padding: 10px !important;
@@ -612,8 +629,7 @@
         pointer-events: none !important;
     }
 
-    body.em-mobile-ui .mes[is_user="false"] .name_text,
-    body.em-mobile-ui .mes[is_user="false"] .mesAvatarWrapper .avatar {
+    body.em-mobile-ui .mes[is_user="false"] .name_text {
         cursor: pointer;
         -webkit-tap-highlight-color: transparent;
     }
@@ -1116,6 +1132,14 @@
         border: 1px solid rgba(255, 255, 255, 0.075) !important;
 
         box-shadow: none !important;
+    }
+
+
+    /* Smart Guided Swipe: subtle hint when the forward button will navigate
+       to an already-saved swipe rather than generate a new one. */
+    body.em-mobile-ui #gg_swipe_button.em-existing-next-swipe {
+        border-color: rgba(141, 99, 237, 0.38) !important;
+        background: rgba(141, 99, 237, 0.12) !important;
     }
 
     /* =====================================================
