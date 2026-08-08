@@ -1,13 +1,13 @@
 const MODULE = 'eldin_mobile_ui';
 const MOBILE_QUERY = '(max-width: 1000px)';
-const SAFE_MODE = new URLSearchParams(window.location.search).get('eldinui') === 'off';
-
 let initialized = false;
 let eventsBound = false;
 let uiObserver = null;
 let textareaObserver = null;
 let geometryRaf = null;
 let activePanelStage = null;
+let themeColorObserver = null;
+let generationControlsObserver = null;
 let lastChatScrollTop = 0;
 let longPressTimer = null;
 let longPressStart = null;
@@ -312,7 +312,8 @@ function stageNativePanel(drawer, content) {
     document.body.classList.add('em-panel-open');
     stage.setAttribute('aria-hidden', 'false');
 
-    closeTopMenu();
+    // Keep the compact top icon tray open if the user opened the panel from it.
+    // This makes switching between API / World Info / Extensions / etc. instant.
     closeToolTray();
     revealHeader();
 
@@ -1190,6 +1191,8 @@ function bindSillyTavernEvents() {
                 cleanTextareaLabels();
                 moveAllEditButtonsIntoActions();
                 ensurePreviousSwipeButton();
+                syncGenerationControls();
+                forceDarkBrowserChrome();
                 scheduleGeometryUpdate();
             }, 30);
         });
@@ -1205,7 +1208,8 @@ function bindOutsideClicks() {
         if (
             document.body.classList.contains('em-top-menu-open') &&
             !event.target.closest('#top-settings-holder') &&
-            !event.target.closest('#em-top-menu-button')
+            !event.target.closest('#em-top-menu-button') &&
+            !event.target.closest('#em-panel-stage')
         ) {
             closeTopMenu();
         }
@@ -1224,6 +1228,95 @@ function bindOutsideClicks() {
             closeToolTray();
         }
     }, { passive: true });
+}
+
+
+function forceDarkBrowserChrome() {
+    const color = '#101012';
+
+    document.documentElement.style.setProperty('background-color', color, 'important');
+    document.body?.style.setProperty('background-color', color, 'important');
+
+    let theme = document.head.querySelector('meta[name="theme-color"]');
+    if (!theme) {
+        theme = document.createElement('meta');
+        theme.setAttribute('name', 'theme-color');
+        document.head.appendChild(theme);
+    }
+    if (theme.getAttribute('content') !== color) {
+        theme.setAttribute('content', color);
+    }
+
+    let status = document.head.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+    if (!status) {
+        status = document.createElement('meta');
+        status.setAttribute('name', 'apple-mobile-web-app-status-bar-style');
+        document.head.appendChild(status);
+    }
+    if (status.getAttribute('content') !== 'black-translucent') {
+        status.setAttribute('content', 'black-translucent');
+    }
+}
+
+function observeBrowserChrome() {
+    if (themeColorObserver) return;
+
+    forceDarkBrowserChrome();
+
+    themeColorObserver = new MutationObserver(() => {
+        const theme = document.head.querySelector('meta[name="theme-color"]');
+        const status = document.head.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+
+        if (
+            theme?.getAttribute('content') !== '#101012' ||
+            status?.getAttribute('content') !== 'black-translucent'
+        ) {
+            forceDarkBrowserChrome();
+        }
+    });
+
+    themeColorObserver.observe(document.head, {
+        subtree: true,
+        childList: true,
+        attributes: true,
+        attributeFilter: ['content'],
+    });
+}
+
+function syncGenerationControls() {
+    const stop = document.querySelector('#mes_stop');
+    if (!stop) {
+        document.body.classList.remove('em-generation-active');
+        return;
+    }
+
+    const style = getComputedStyle(stop);
+    const visible =
+        style.display !== 'none' &&
+        style.visibility !== 'hidden' &&
+        Number.parseFloat(style.opacity || '1') > 0;
+
+    document.body.classList.toggle('em-generation-active', visible);
+}
+
+function observeGenerationControls() {
+    if (generationControlsObserver) return;
+
+    const right = document.querySelector('#rightSendForm');
+    if (!right) return;
+
+    generationControlsObserver = new MutationObserver(() => {
+        requestAnimationFrame(syncGenerationControls);
+    });
+
+    generationControlsObserver.observe(right, {
+        subtree: true,
+        childList: true,
+        attributes: true,
+        attributeFilter: ['class', 'style', 'hidden'],
+    });
+
+    syncGenerationControls();
 }
 
 function bindViewportEvents() {
@@ -1251,11 +1344,6 @@ async function waitForReady() {
 }
 
 async function init() {
-    if (SAFE_MODE) {
-        console.warn(`[${MODULE}] Safe mode active (?eldinui=off). Extension UI skipped.`);
-        return;
-    }
-
     if (initialized || !isMobileLayout()) return;
 
     const ready = await waitForReady();
@@ -1266,6 +1354,7 @@ async function init() {
 
     initialized = true;
     document.body.classList.add('em-mobile-ui');
+    document.body.classList.remove('em-header-hidden');
 
     buildPanelStage();
     buildHeader();
@@ -1278,9 +1367,10 @@ async function init() {
     bindSillyTavernEvents();
     bindOutsideClicks();
     bindViewportEvents();
+    observeBrowserChrome();
+    observeGenerationControls();
     bindTopDrawerStaging();
     bindMessageCharacterClicks();
-    bindAutoHideHeader();
     bindLongPressMessageActions();
     ensurePreviousSwipeButton();
     scheduleGeometryUpdate();
@@ -1294,11 +1384,13 @@ async function init() {
             updateHeader();
             moveAllEditButtonsIntoActions();
             ensurePreviousSwipeButton();
+            syncGenerationControls();
+            forceDarkBrowserChrome();
             scheduleGeometryUpdate();
         }, delay);
     });
 
-    log('Eldin Mobile UI v1.3.0 loaded.');
+    log('Eldin Mobile UI v1.4.0 loaded.');
 }
 
 init();
