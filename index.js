@@ -997,6 +997,60 @@ function adoptLeftSendExtras() {
     }
 }
 
+
+function patchGuidedResponseButton() {
+    const button = document.querySelector('#gg_response_button');
+    if (!button) return;
+
+    // Replace the dog icon with a neutral "guided reply" speech-bubble icon.
+    const icon = button.querySelector('i');
+    if (icon) {
+        icon.classList.remove('fa-dog');
+        icon.classList.add('fa-comment-dots');
+    }
+
+    button.title = 'Guided Response';
+    button.setAttribute('aria-label', 'Guided Response');
+
+    // Guided Generations can recreate this button dynamically, so patch each
+    // newly-created DOM instance exactly once.
+    if (button.dataset.emGuidedResponsePatched === 'true') return;
+    button.dataset.emGuidedResponsePatched = 'true';
+
+    /*
+       Use capture phase + stopImmediatePropagation so the button cannot get
+       broken by stale listeners after the Guided Generations toolbar is moved
+       into the Eldin Mobile UI tray.
+
+       We still call Guided Generations' REAL implementation. This preserves:
+       - typed guidance from #send_textarea
+       - its prompt/depth/settings behavior
+       - group-member selection
+       - its native generation logic
+    */
+    button.addEventListener('click', async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+
+        const guidedResponse = globalThis.GuidedGenerations?.guidedResponse;
+        if (typeof guidedResponse !== 'function') {
+            console.error(`[${MODULE}] Guided Generations guidedResponse() is not available.`);
+            globalThis.toastr?.error?.('Guided Response is not ready yet.');
+            return;
+        }
+
+        try {
+            const generation = guidedResponse();
+            closeToolTray();
+            await generation;
+        } catch (error) {
+            console.error(`[${MODULE}] Guided Response failed`, error);
+            globalThis.toastr?.error?.('Guided Response failed. Check the console for details.');
+        }
+    }, true);
+}
+
 function adoptGuidedGenerations() {
     const slot = document.querySelector('#em-gg-slot');
     const gg = document.querySelector('#gg-action-button-container');
@@ -1006,6 +1060,7 @@ function adoptGuidedGenerations() {
         slot.appendChild(gg);
     }
 
+    patchGuidedResponseButton();
     return true;
 }
 
@@ -1390,7 +1445,7 @@ async function init() {
         }, delay);
     });
 
-    log('Eldin Mobile UI v1.4.0 loaded.');
+    log('Eldin Mobile UI v1.5.0 loaded.');
 }
 
 init();
