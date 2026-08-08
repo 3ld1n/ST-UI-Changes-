@@ -998,45 +998,211 @@ function adoptLeftSendExtras() {
 }
 
 
+
+function getGuidedResponseGroupMembers() {
+    const ctx = getContext();
+    if (!ctx?.groupId || !Array.isArray(ctx.groups) || !Array.isArray(ctx.characters)) {
+        return [];
+    }
+
+    const group = ctx.groups.find(group => String(group.id) === String(ctx.groupId));
+    if (!group || !Array.isArray(group.members)) return [];
+
+    return group.members
+        .map((memberAvatar, groupIndex) => {
+            const avatar = typeof memberAvatar === 'string'
+                ? memberAvatar
+                : memberAvatar?.avatar;
+
+            if (!avatar) return null;
+
+            const chid = ctx.characters.findIndex(character => character?.avatar === avatar);
+            if (chid < 0) return null;
+
+            const character = ctx.characters[chid];
+            return {
+                chid,
+                groupIndex,
+                name: character?.name || `Character ${groupIndex + 1}`,
+                avatar,
+            };
+        })
+        .filter(Boolean);
+}
+
+function closeGuidedResponsePicker(value = null) {
+    const picker = document.querySelector('#em-guided-response-picker');
+    if (!picker) return;
+
+    const resolver = picker._emResolve;
+    picker.remove();
+
+    if (typeof resolver === 'function') {
+        resolver(value);
+    }
+}
+
+function showGuidedResponsePicker() {
+    const existing = document.querySelector('#em-guided-response-picker');
+    if (existing) existing.remove();
+
+    const members = getGuidedResponseGroupMembers();
+    if (!members.length) {
+        globalThis.toastr?.warning?.('No group members are available for Guided Response.');
+        return Promise.resolve(null);
+    }
+
+    return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.id = 'em-guided-response-picker';
+        overlay._emResolve = resolve;
+
+        const sheet = document.createElement('div');
+        sheet.className = 'em-gr-picker-sheet';
+
+        const header = document.createElement('div');
+        header.className = 'em-gr-picker-header';
+
+        const titleWrap = document.createElement('div');
+        titleWrap.className = 'em-gr-picker-title-wrap';
+
+        const title = document.createElement('div');
+        title.className = 'em-gr-picker-title';
+        title.textContent = 'Who should respond?';
+
+        const subtitle = document.createElement('div');
+        subtitle.className = 'em-gr-picker-subtitle';
+        subtitle.textContent = 'Choose a character for this guided response.';
+
+        titleWrap.append(title, subtitle);
+
+        const close = document.createElement('button');
+        close.type = 'button';
+        close.className = 'em-gr-picker-close';
+        close.innerHTML = '&times;';
+        close.setAttribute('aria-label', 'Cancel');
+        close.addEventListener('click', () => closeGuidedResponsePicker(null));
+
+        header.append(titleWrap, close);
+
+        const list = document.createElement('div');
+        list.className = 'em-gr-picker-list';
+
+        for (const member of members) {
+            const row = document.createElement('button');
+            row.type = 'button';
+            row.className = 'em-gr-picker-member';
+
+            const avatar = document.createElement('img');
+            avatar.className = 'em-gr-picker-avatar';
+            avatar.alt = '';
+            avatar.src = `/thumbnail?type=avatar&file=${encodeURIComponent(member.avatar)}`;
+            avatar.addEventListener('error', () => {
+                avatar.style.visibility = 'hidden';
+            });
+
+            const name = document.createElement('span');
+            name.className = 'em-gr-picker-name';
+            name.textContent = member.name;
+
+            const arrow = document.createElement('i');
+            arrow.className = 'fa-solid fa-chevron-right em-gr-picker-arrow';
+
+            row.append(avatar, name, arrow);
+            row.addEventListener('click', () => closeGuidedResponsePicker(member));
+            list.appendChild(row);
+        }
+
+        sheet.append(header, list);
+        overlay.appendChild(sheet);
+
+        overlay.addEventListener('click', (event) => {
+            if (event.target === overlay) {
+                closeGuidedResponsePicker(null);
+            }
+        });
+
+        document.body.appendChild(overlay);
+    });
+}
+
+async function runGuidedResponseReliably() {
+    const guidedResponse = globalThis.GuidedGenerations?.guidedResponse;
+
+    if (typeof guidedResponse !== 'function') {
+        console.error(`[${MODULE}] Guided Generations guidedResponse() is not available.`);
+        globalThis.toastr?.error?.('Guided Response is not ready yet.');
+        return;
+    }
+
+    const ctx = getContext();
+
+    // Single-character chats can use GG directly.
+    if (!ctx?.groupId) {
+        await guidedResponse();
+        return;
+    }
+
+    /*
+       For group chats we select the character ourselves, then temporarily
+       publish the exact cross-extension picker API that current Guided
+       Generations checks before falling back to its own selector.
+
+       GG still performs ALL actual Guided Response work:
+       prompt/settings, typed guidance, injection, /trigger and generation.
+       We only make the character choice reliable after moving its toolbar.
+    */
+    const selected = await showGuidedResponsePicker();
+    if (!selected) return;
+
+    const hadOwnSelector = Object.prototype.hasOwnProperty.call(
+        globalThis,
+        'STGroupResponderSelector',
+    );
+    const previousSelector = globalThis.STGroupResponderSelector;
+
+    try {
+        globalThis.STGroupResponderSelector = {
+            pickCharacter: async () => ({
+                chid: selected.chid,
+                name: selected.name,
+            }),
+        };
+
+        await guidedResponse();
+    } finally {
+        if (hadOwnSelector) {
+            globalThis.STGroupResponderSelector = previousSelector;
+        } else {
+            try {
+                delete globalThis.STGroupResponderSelector;
+            } catch {
+                globalThis.STGroupResponderSelector = previousSelector;
+            }
+        }
+    }
+}
+
 function patchGuidedResponseButton() {
     const button = document.querySelector('#gg_response_button');
     if (!button) return;
 
-    /*
-       Guided Generations puts the Font Awesome icon classes directly on the
-       button element itself (not on a child <i>). Replace the dog there.
-    */
+    // GG puts Font Awesome icon classes directly on the button.
     button.classList.remove('fa-dog');
     button.classList.add('fa-comment-dots');
     button.title = 'Guided Response';
     button.setAttribute('aria-label', 'Guided Response');
 
-    // GG can recreate its toolbar; patch each new button instance once.
     if (button.dataset.emGuidedResponsePatched === 'true') return;
     button.dataset.emGuidedResponsePatched = 'true';
 
-    /*
-       Call Guided Generations' own exported guidedResponse() function.
-
-       IMPORTANT: do NOT close the Eldin tool tray here. GG's group picker
-       measures #gg-action-button-container when it opens. Hiding the tray
-       before that asynchronous picker is created can move the picker offscreen
-       or make it appear to never open.
-    */
     button.addEventListener('click', async (event) => {
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
 
-        const guidedResponse = globalThis.GuidedGenerations?.guidedResponse;
-        if (typeof guidedResponse !== 'function') {
-            console.error(`[${MODULE}] Guided Generations guidedResponse() is not available.`);
-            globalThis.toastr?.error?.('Guided Response is not ready yet.');
-            return;
-        }
-
         try {
-            await guidedResponse();
+            await runGuidedResponseReliably();
         } catch (error) {
             console.error(`[${MODULE}] Guided Response failed`, error);
             globalThis.toastr?.error?.('Guided Response failed. Check the console for details.');
@@ -1271,7 +1437,8 @@ function bindOutsideClicks() {
             !event.target.closest('#options') &&
             !event.target.closest('#quickPersonaMenu') &&
             !event.target.closest('[id^="gg_"]') &&
-            !event.target.closest('[id^="pg_"]')
+            !event.target.closest('[id^="pg_"]') &&
+            !event.target.closest('#em-guided-response-picker')
         ) {
             closeToolTray();
         }

@@ -1,28 +1,27 @@
-# Eldin Mobile UI v1.5.0
+# Eldin Mobile UI v1.5.0 — Guided Response hotfix 2
 
-Focused Guided Response hotfix. Version remains 1.5.0 as requested.
+Version remains 1.5.0 as requested.
 
-## Guided Response fix
+## What changed
 
-- The Guided Response button now calls Guided Generations' own live
-  `window.GuidedGenerations.guidedResponse()` function.
-- The Eldin Wand tray is deliberately kept open while Guided Generations opens
-  its group-member picker. GG positions that picker relative to its action
-  toolbar, so closing/hiding the tray too early could make the picker appear
-  offscreen.
-- GG's fallback group-member picker is forced to a stable, high-z-index mobile
-  position above the composer.
-- No other working Eldin Mobile UI features were intentionally changed.
+The Guided Response button now uses a reliable two-step group flow:
 
-## Icon fix
+1. Eldin Mobile UI opens its own small mobile character selector for group
+   chats.
+2. After you choose the member, the extension hands that exact selection back
+   to Guided Generations through the group-picker API GG already supports.
+3. Guided Generations still performs the real Guided Response itself:
+   - reads your typed guidance
+   - uses its configured Guided Response prompt
+   - applies its configured depth/role
+   - injects the instruction
+   - targets the selected member
+   - runs the real generation
+   - restores the input afterward
 
-Guided Generations attaches `fa-dog` directly to the button element itself.
-The previous patch looked for a child icon, so the dog remained visible.
+Single-character chats call Guided Generations directly and do not show the
+group picker.
 
-This hotfix replaces the button's own `fa-dog` class with
-`fa-comment-dots`, giving Guided Response a neutral chat/reply icon.
+The Guided Response icon remains the speech-bubble-with-dots icon.
 
-## GitHub
-
-Keep the manifest at version 1.5.0. Replace the repository files, commit, then
-use Manage Extensions -> Update and reload.
+No other working Eldin Mobile UI features were intentionally changed.

@@ -1294,3 +1294,156 @@
         border-radius: 10px !important;
     }
 }
+
+
+/* v1.5 Guided Response reliable group selector */
+@media screen and (max-width: 1000px) {
+    body.em-mobile-ui #em-guided-response-picker {
+        position: fixed !important;
+        inset: 0 !important;
+        z-index: 1000000 !important;
+
+        display: flex !important;
+        align-items: flex-end !important;
+        justify-content: center !important;
+
+        padding:
+            12px
+            12px
+            max(98px, calc(env(safe-area-inset-bottom) + 86px))
+            12px !important;
+
+        background: rgba(0, 0, 0, 0.58) !important;
+        backdrop-filter: blur(4px) !important;
+        -webkit-backdrop-filter: blur(4px) !important;
+    }
+
+    body.em-mobile-ui #em-guided-response-picker .em-gr-picker-sheet {
+        width: min(420px, 100%) !important;
+        max-height: min(62dvh, 520px) !important;
+
+        display: flex !important;
+        flex-direction: column !important;
+
+        overflow: hidden !important;
+
+        background: #1a1a1f !important;
+        border: 1px solid rgba(255, 255, 255, 0.10) !important;
+        border-radius: 22px !important;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.48) !important;
+    }
+
+    body.em-mobile-ui #em-guided-response-picker .em-gr-picker-header {
+        display: flex !important;
+        align-items: center !important;
+        gap: 12px !important;
+
+        padding: 15px 14px 13px !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.07) !important;
+    }
+
+    body.em-mobile-ui #em-guided-response-picker .em-gr-picker-title-wrap {
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
+    }
+
+    body.em-mobile-ui #em-guided-response-picker .em-gr-picker-title {
+        color: rgba(255, 255, 255, 0.96) !important;
+        font-size: 17px !important;
+        line-height: 1.2 !important;
+        font-weight: 700 !important;
+    }
+
+    body.em-mobile-ui #em-guided-response-picker .em-gr-picker-subtitle {
+        margin-top: 3px !important;
+
+        color: rgba(255, 255, 255, 0.52) !important;
+        font-size: 11px !important;
+        line-height: 1.25 !important;
+    }
+
+    body.em-mobile-ui #em-guided-response-picker .em-gr-picker-close {
+        width: 36px !important;
+        height: 36px !important;
+        min-width: 36px !important;
+
+        margin: 0 !important;
+        padding: 0 0 2px 0 !important;
+
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+
+        border-radius: 12px !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        background: rgba(255, 255, 255, 0.045) !important;
+        color: rgba(255, 255, 255, 0.82) !important;
+
+        font-size: 27px !important;
+        font-weight: 300 !important;
+    }
+
+    body.em-mobile-ui #em-guided-response-picker .em-gr-picker-list {
+        min-height: 0 !important;
+        overflow-y: auto !important;
+        overscroll-behavior: contain !important;
+        -webkit-overflow-scrolling: touch !important;
+
+        padding: 7px !important;
+    }
+
+    body.em-mobile-ui #em-guided-response-picker .em-gr-picker-member {
+        -webkit-appearance: none !important;
+        appearance: none !important;
+
+        width: 100% !important;
+        min-height: 58px !important;
+
+        margin: 0 !important;
+        padding: 7px 9px !important;
+
+        display: flex !important;
+        align-items: center !important;
+        gap: 11px !important;
+
+        border: 0 !important;
+        border-radius: 14px !important;
+        background: transparent !important;
+        color: inherit !important;
+
+        text-align: left !important;
+    }
+
+    body.em-mobile-ui #em-guided-response-picker .em-gr-picker-member:active {
+        background: rgba(141, 99, 237, 0.17) !important;
+    }
+
+    body.em-mobile-ui #em-guided-response-picker .em-gr-picker-avatar {
+        width: 44px !important;
+        height: 44px !important;
+        min-width: 44px !important;
+
+        border-radius: 50% !important;
+        object-fit: cover !important;
+
+        background: rgba(255, 255, 255, 0.05) !important;
+    }
+
+    body.em-mobile-ui #em-guided-response-picker .em-gr-picker-name {
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
+
+        color: rgba(255, 255, 255, 0.94) !important;
+        font-size: 16px !important;
+        font-weight: 600 !important;
+
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+
+    body.em-mobile-ui #em-guided-response-picker .em-gr-picker-arrow {
+        color: rgba(255, 255, 255, 0.32) !important;
+        font-size: 13px !important;
+    }
+}
