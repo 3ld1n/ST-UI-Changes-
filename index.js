@@ -1123,6 +1123,22 @@ function showGuidedResponsePicker() {
         });
 
         document.body.appendChild(overlay);
+
+        /*
+           iPhone Safari can center fixed overlays against a larger layout
+           viewport than the actually visible area. Anchor the selector above
+           the visible Eldin tool tray instead.
+        */
+        const tray = document.querySelector('#em-tool-tray');
+        const trayRect = tray?.getBoundingClientRect();
+        const viewportHeight = window.visualViewport?.height || window.innerHeight;
+
+        if (trayRect && Number.isFinite(trayRect.top)) {
+            const bottomGap = Math.max(170, viewportHeight - trayRect.top + 12);
+            sheet.style.setProperty('--em-gr-bottom-gap', `${bottomGap}px`);
+        } else {
+            sheet.style.setProperty('--em-gr-bottom-gap', '190px');
+        }
     });
 }
 
@@ -1139,6 +1155,7 @@ async function runGuidedResponseReliably() {
 
     // Single-character chats can use GG directly.
     if (!ctx?.groupId) {
+        closeToolTray();
         await guidedResponse();
         return;
     }
@@ -1154,6 +1171,10 @@ async function runGuidedResponseReliably() {
     */
     const selected = await showGuidedResponsePicker();
     if (!selected) return;
+
+    // The user has chosen the responder. Collapse the Wand tray as generation
+    // starts, matching the rest of the mobile generation UI.
+    closeToolTray();
 
     const hadOwnSelector = Object.prototype.hasOwnProperty.call(
         globalThis,

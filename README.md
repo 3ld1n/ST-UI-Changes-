@@ -1,16 +1,18 @@
-# Eldin Mobile UI v1.5.0 — hotfix 3
+# Eldin Mobile UI v1.5.0 — hotfix 4
 
 Version remains **1.5.0**.
 
-## Guided Response fix
-The Guided Response button now replaces the original Guided Generations
-button node with a cloned one. This removes the old click handler that
-could still open an off-screen popup.
+## Guided Response picker placement
+The group-character picker is no longer centered using iPhone Safari's
+layout viewport. It is now anchored above the actual Eldin Wand tray,
+which keeps the entire selector visible and avoids the top of the
+picker being pushed off-screen.
 
-Group chats now rely on Eldin Mobile UI's own mobile character picker,
-and only after selection does it hand control to Guided Generations for
-the real response generation.
+## Wand behavior
+- While choosing a group member, the Wand tray stays open.
+- As soon as you tap the character and Guided Response starts,
+  the Wand tray closes automatically.
+- In single-character chats, it closes immediately when generation
+  starts.
 
-## Extra UI fix
-The custom Guided Response picker is now forced to appear as a centered
-modal inside the visible mobile viewport.
+No other working UI behavior was intentionally changed.
