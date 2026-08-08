@@ -6,6 +6,11 @@ let eventsBound = false;
 let uiObserver = null;
 let textareaObserver = null;
 let geometryRaf = null;
+let activePanelStage = null;
+let lastChatScrollTop = 0;
+let longPressTimer = null;
+let longPressStart = null;
+let longPressMessage = null;
 
 const log = (...args) => console.log(`[${MODULE}]`, ...args);
 
@@ -191,6 +196,482 @@ function scheduleGeometryUpdate() {
     geometryRaf = requestAnimationFrame(updateGeometry);
 }
 
+
+function revealHeader() {
+    document.body.classList.remove('em-header-hidden');
+    scheduleGeometryUpdate();
+}
+
+function hideHeader() {
+    if (
+        document.body.classList.contains('em-top-menu-open') ||
+        document.body.classList.contains('em-tools-open') ||
+        document.body.classList.contains('em-panel-open')
+    ) {
+        return;
+    }
+
+    document.body.classList.add('em-header-hidden');
+    scheduleGeometryUpdate();
+}
+
+function getDrawerLabel(drawer, content) {
+    const icon = drawer?.querySelector(':scope > .drawer-toggle .drawer-icon');
+    const iconTitle = icon?.getAttribute('title')?.trim();
+    if (iconTitle) return iconTitle;
+
+    const heading = content?.querySelector('h1, h2, h3, .panel-title, .drawer-title');
+    const headingText = heading?.textContent?.trim();
+    if (headingText) return headingText;
+
+    return 'SillyTavern';
+}
+
+function buildPanelStage() {
+    if (document.querySelector('#em-panel-stage')) return;
+
+    const backdrop = document.createElement('div');
+    backdrop.id = 'em-panel-backdrop';
+
+    const stage = document.createElement('section');
+    stage.id = 'em-panel-stage';
+    stage.setAttribute('aria-hidden', 'true');
+
+    const header = document.createElement('div');
+    header.id = 'em-panel-stage-header';
+
+    const title = document.createElement('div');
+    title.id = 'em-panel-stage-title';
+    title.textContent = 'SillyTavern';
+
+    const close = makeButton('em-panel-stage-close', 'Close panel');
+    close.classList.add('em-panel-stage-close');
+    close.textContent = '×';
+
+    const body = document.createElement('div');
+    body.id = 'em-panel-stage-body';
+
+    header.append(title, close);
+    stage.append(header, body);
+    document.body.append(backdrop, stage);
+
+    close.addEventListener('click', () => closePanelStage());
+    backdrop.addEventListener('click', () => closePanelStage());
+}
+
+function collapseNativeDrawer(drawer, content) {
+    if (!drawer || !content) return;
+
+    content.classList.remove('openDrawer');
+    content.classList.add('closedDrawer');
+    content.style.removeProperty('display');
+    content.style.removeProperty('height');
+
+    const icon = drawer.querySelector(':scope > .drawer-toggle .drawer-icon');
+    if (icon) {
+        icon.classList.remove('openIcon');
+        icon.classList.add('closedIcon');
+    }
+}
+
+function stageNativePanel(drawer, content) {
+    buildPanelStage();
+
+    if (!drawer || !content) return;
+
+    if (activePanelStage?.content === content) {
+        revealHeader();
+        return;
+    }
+
+    if (activePanelStage) {
+        closePanelStage({ collapse: true });
+    }
+
+    const stage = document.querySelector('#em-panel-stage');
+    const stageBody = document.querySelector('#em-panel-stage-body');
+    const stageTitle = document.querySelector('#em-panel-stage-title');
+    if (!stage || !stageBody || !stageTitle) return;
+
+    const placeholder = document.createComment('eldin-mobile-ui-panel-placeholder');
+    content.parentNode?.insertBefore(placeholder, content);
+
+    content.classList.remove('closedDrawer');
+    content.classList.add('openDrawer', 'em-staged-panel');
+
+    stageBody.replaceChildren(content);
+    stageTitle.textContent = getDrawerLabel(drawer, content);
+
+    activePanelStage = {
+        drawer,
+        content,
+        placeholder,
+    };
+
+    document.body.classList.add('em-panel-open');
+    stage.setAttribute('aria-hidden', 'false');
+
+    closeTopMenu();
+    closeToolTray();
+    revealHeader();
+
+    requestAnimationFrame(() => {
+        content.scrollTop = 0;
+        scheduleGeometryUpdate();
+    });
+}
+
+function closePanelStage({ collapse = true } = {}) {
+    if (!activePanelStage) {
+        document.body.classList.remove('em-panel-open');
+        document.querySelector('#em-panel-stage')?.setAttribute('aria-hidden', 'true');
+        return;
+    }
+
+    const { drawer, content, placeholder } = activePanelStage;
+
+    content.classList.remove('em-staged-panel');
+
+    if (placeholder?.parentNode) {
+        placeholder.parentNode.insertBefore(content, placeholder);
+        placeholder.remove();
+    } else if (drawer) {
+        drawer.appendChild(content);
+    }
+
+    if (collapse) {
+        collapseNativeDrawer(drawer, content);
+    }
+
+    activePanelStage = null;
+    document.body.classList.remove('em-panel-open');
+    document.querySelector('#em-panel-stage')?.setAttribute('aria-hidden', 'true');
+    document.querySelector('#em-panel-stage-body')?.replaceChildren();
+
+    scheduleGeometryUpdate();
+}
+
+function stageDrawerAfterNativeToggle(drawer) {
+    window.setTimeout(() => {
+        const content =
+            drawer?.querySelector(':scope > .drawer-content') ||
+            (activePanelStage?.drawer === drawer ? activePanelStage.content : null);
+
+        if (!content) return;
+
+        const isOpen =
+            content.classList.contains('openDrawer') ||
+            getComputedStyle(content).display !== 'none';
+
+        if (isOpen) {
+            stageNativePanel(drawer, content);
+        }
+    }, 0);
+}
+
+function bindTopDrawerStaging() {
+    document.addEventListener('click', (event) => {
+        if (!(event.target instanceof Element)) return;
+
+        const toggle = event.target.closest('#top-settings-holder .drawer > .drawer-toggle');
+        if (!toggle) return;
+
+        const drawer = toggle.closest('.drawer');
+        if (!drawer) return;
+
+        stageDrawerAfterNativeToggle(drawer);
+    });
+}
+
+function openCurrentChatDetails() {
+    const holder = document.querySelector('#rightNavHolder');
+    const toggle = holder?.querySelector(':scope > .drawer-toggle');
+    const panel = document.querySelector('#right-nav-panel');
+
+    if (!holder || !toggle || !panel) return;
+
+    revealHeader();
+    closeToolTray();
+    closeTopMenu();
+
+    const finishOpen = () => {
+        document.querySelector('#rm_button_selected_ch')?.click();
+        stageNativePanel(holder, panel);
+    };
+
+    if (activePanelStage?.content === panel) {
+        finishOpen();
+        return;
+    }
+
+    const alreadyOpen =
+        panel.classList.contains('openDrawer') ||
+        getComputedStyle(panel).display !== 'none';
+
+    if (!alreadyOpen) {
+        toggle.click();
+    }
+
+    window.setTimeout(finishOpen, 30);
+}
+
+function openMessageCharacter(message) {
+    if (!(message instanceof Element)) return;
+
+    const ctx = getContext();
+    const group = findCurrentGroup(ctx);
+
+    if (!group) {
+        openCurrentChatDetails();
+        return;
+    }
+
+    const characterName = message.getAttribute('ch_name')?.trim();
+    if (!characterName || !Array.isArray(ctx?.characters)) {
+        openCurrentChatDetails();
+        return;
+    }
+
+    const characterId = ctx.characters.findIndex(character =>
+        String(character?.name ?? '').trim() === characterName
+    );
+
+    openCurrentChatDetails();
+
+    if (characterId < 0) return;
+
+    const tryOpen = () => {
+        const viewButton =
+            document.querySelector(
+                `#right-nav-panel .group_member[data-chid="${characterId}"] [data-action="view"]`
+            ) ||
+            document.querySelector(
+                `#right-nav-panel .group_member[data-chid="${characterId}"] .right_menu_button[title*="View"]`
+            );
+
+        if (viewButton) {
+            viewButton.click();
+            const stageTitle = document.querySelector('#em-panel-stage-title');
+            if (stageTitle) stageTitle.textContent = characterName;
+            return true;
+        }
+
+        return false;
+    };
+
+    if (!tryOpen()) {
+        window.setTimeout(() => {
+            if (!tryOpen()) {
+                window.setTimeout(tryOpen, 150);
+            }
+        }, 80);
+    }
+}
+
+function bindHeaderInteractions() {
+    const headerAvatar = document.querySelector('#em-header-avatar');
+    const headerText = document.querySelector('.em-header-text');
+
+    for (const el of [headerAvatar, headerText]) {
+        if (!el || el.dataset.emBound === '1') continue;
+        el.dataset.emBound = '1';
+        el.setAttribute('role', 'button');
+        el.setAttribute('tabindex', '0');
+
+        el.addEventListener('click', openCurrentChatDetails);
+        el.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                openCurrentChatDetails();
+            }
+        });
+    }
+}
+
+function bindMessageCharacterClicks() {
+    document.addEventListener('click', (event) => {
+        if (!(event.target instanceof Element)) return;
+
+        const trigger = event.target.closest(
+            '.mes[is_user="false"] .name_text, .mes[is_user="false"] .mesAvatarWrapper .avatar'
+        );
+
+        if (!trigger) return;
+
+        const message = trigger.closest('.mes');
+        if (!message) return;
+
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        openMessageCharacter(message);
+    }, true);
+}
+
+function bindAutoHideHeader() {
+    const chat = document.querySelector('#chat');
+    if (!chat || chat.dataset.emAutoHideBound === '1') return;
+
+    chat.dataset.emAutoHideBound = '1';
+    lastChatScrollTop = chat.scrollTop;
+
+    chat.addEventListener('scroll', () => {
+        const current = chat.scrollTop;
+        const delta = current - lastChatScrollTop;
+
+        if (document.body.classList.contains('em-panel-open')) {
+            revealHeader();
+            lastChatScrollTop = current;
+            return;
+        }
+
+        if (delta > 7 && current > 90) {
+            hideHeader();
+        } else if (delta < -6 || current < 45) {
+            revealHeader();
+        }
+
+        lastChatScrollTop = current;
+    }, { passive: true });
+}
+
+function buildPreviousSwipeButton() {
+    if (document.querySelector('#em-prev-swipe-button')) return;
+
+    const button = makeButton(
+        'em-prev-swipe-button',
+        'Previous swipe',
+        'fa-solid fa-backward'
+    );
+    button.classList.add('em-history-swipe-button');
+
+    button.addEventListener('click', () => {
+        const nativeLeft = document.querySelector('.last_mes .swipe_left');
+        if (!nativeLeft || button.disabled) return;
+
+        nativeLeft.dispatchEvent(new MouseEvent('click', {
+            bubbles: true,
+            cancelable: true,
+            view: window,
+        }));
+
+        window.setTimeout(updatePreviousSwipeButton, 50);
+    });
+
+    const ggSwipe = document.querySelector('#gg_swipe_button');
+    if (ggSwipe?.parentElement) {
+        ggSwipe.parentElement.insertBefore(button, ggSwipe);
+        return;
+    }
+
+    const ggSlot = document.querySelector('#em-gg-slot');
+    if (ggSlot) {
+        ggSlot.prepend(button);
+    }
+}
+
+function updatePreviousSwipeButton() {
+    const button = document.querySelector('#em-prev-swipe-button');
+    if (!button) return;
+
+    const lastMessage =
+        document.querySelector('#chat .mes.last_mes') ||
+        document.querySelector('#chat .mes:last-of-type');
+
+    const swipeId = Number(lastMessage?.getAttribute('swipeid') ?? 0);
+    const canGoBack = Number.isFinite(swipeId) && swipeId > 0;
+
+    button.disabled = !canGoBack;
+    button.setAttribute('aria-disabled', String(!canGoBack));
+}
+
+function ensurePreviousSwipeButton() {
+    buildPreviousSwipeButton();
+
+    const button = document.querySelector('#em-prev-swipe-button');
+    const ggSwipe = document.querySelector('#gg_swipe_button');
+
+    if (button && ggSwipe?.parentElement && button.parentElement !== ggSwipe.parentElement) {
+        ggSwipe.parentElement.insertBefore(button, ggSwipe);
+    } else if (button && ggSwipe?.parentElement && button.nextElementSibling !== ggSwipe) {
+        ggSwipe.parentElement.insertBefore(button, ggSwipe);
+    }
+
+    updatePreviousSwipeButton();
+}
+
+function cancelLongPress() {
+    if (longPressTimer) {
+        window.clearTimeout(longPressTimer);
+        longPressTimer = null;
+    }
+
+    longPressStart = null;
+    longPressMessage = null;
+}
+
+function bindLongPressMessageActions() {
+    document.addEventListener('pointerdown', (event) => {
+        if (!(event.target instanceof Element)) return;
+        if (event.pointerType === 'mouse') return;
+
+        if (event.target.closest(
+            'a, button, input, textarea, select, .mes_buttons, .mes_edit_buttons, .code-copy, .mes_reasoning_summary'
+        )) {
+            return;
+        }
+
+        const block = event.target.closest('.mes .mes_block');
+        const message = block?.closest('.mes');
+        if (!block || !message) return;
+
+        cancelLongPress();
+
+        longPressStart = {
+            x: event.clientX,
+            y: event.clientY,
+            pointerId: event.pointerId,
+        };
+        longPressMessage = message;
+
+        longPressTimer = window.setTimeout(() => {
+            const hint = longPressMessage?.querySelector('.extraMesButtonsHint');
+            if (hint) {
+                hint.dispatchEvent(new MouseEvent('click', {
+                    bubbles: true,
+                    cancelable: true,
+                    view: window,
+                }));
+                longPressMessage?.classList.add('em-actions-opened-by-hold');
+            }
+            cancelLongPress();
+        }, 520);
+    }, { passive: true });
+
+    document.addEventListener('pointermove', (event) => {
+        if (!longPressStart || event.pointerId !== longPressStart.pointerId) return;
+
+        const distance = Math.hypot(
+            event.clientX - longPressStart.x,
+            event.clientY - longPressStart.y
+        );
+
+        if (distance > 12) {
+            cancelLongPress();
+        }
+    }, { passive: true });
+
+    document.addEventListener('pointerup', cancelLongPress, { passive: true });
+    document.addEventListener('pointercancel', cancelLongPress, { passive: true });
+
+    document.addEventListener('contextmenu', (event) => {
+        if (!(event.target instanceof Element)) return;
+        if (event.target.closest('.mes .mes_block')) {
+            event.preventDefault();
+        }
+    });
+}
+
+
 function closeTopMenu() {
     document.body.classList.remove('em-top-menu-open');
     document.querySelector('#em-top-menu-button')?.setAttribute('aria-expanded', 'false');
@@ -261,6 +742,7 @@ function buildHeader() {
     topBar.appendChild(header);
 
     updateHeader();
+    bindHeaderInteractions();
 }
 
 function closeToolTray() {
@@ -413,6 +895,8 @@ function adoptComposerExtensions() {
     if (!hasGuidedGenerations) {
         adoptFallbackQuickReplies();
     }
+
+    ensurePreviousSwipeButton();
 }
 
 function cleanTextareaLabels() {
@@ -430,7 +914,8 @@ function cleanTextareaLabels() {
         textarea.setAttribute('data-i18n', i18nText);
     }
 
-    if ((textarea.getAttribute('placeholder') || '').includes('/?')) {
+    const placeholder = textarea.getAttribute('placeholder') || '';
+    if (placeholder.includes('/?')) {
         textarea.setAttribute('placeholder', cleanText);
     }
 }
@@ -476,6 +961,13 @@ function observeDynamicUi() {
         let headerMayNeedUpdate = false;
 
         for (const mutation of mutations) {
+            if (
+                mutation.target instanceof Element &&
+                mutation.target.closest?.('#gg-action-button-container')
+            ) {
+                composerChanged = true;
+            }
+
             for (const node of mutation.addedNodes) {
                 if (!(node instanceof Element)) continue;
 
@@ -505,12 +997,16 @@ function observeDynamicUi() {
             }
         }
 
-        if (messagesChanged) moveAllEditButtonsIntoActions();
+        if (messagesChanged) {
+            moveAllEditButtonsIntoActions();
+            updatePreviousSwipeButton();
+        }
 
         if (composerChanged) {
             requestAnimationFrame(() => {
                 adoptComposerExtensions();
                 cleanTextareaLabels();
+                ensurePreviousSwipeButton();
             });
         }
 
@@ -557,6 +1053,7 @@ function bindSillyTavernEvents() {
                 adoptComposerExtensions();
                 cleanTextareaLabels();
                 moveAllEditButtonsIntoActions();
+                ensurePreviousSwipeButton();
                 scheduleGeometryUpdate();
             }, 30);
         });
@@ -629,6 +1126,7 @@ async function init() {
     initialized = true;
     document.body.classList.add('em-mobile-ui');
 
+    buildPanelStage();
     buildHeader();
     buildComposer();
     moveAllEditButtonsIntoActions();
@@ -639,6 +1137,11 @@ async function init() {
     bindSillyTavernEvents();
     bindOutsideClicks();
     bindViewportEvents();
+    bindTopDrawerStaging();
+    bindMessageCharacterClicks();
+    bindAutoHideHeader();
+    bindLongPressMessageActions();
+    ensurePreviousSwipeButton();
     scheduleGeometryUpdate();
 
     // Several third-party extensions initialize after APP_READY.
@@ -649,11 +1152,12 @@ async function init() {
             cleanTextareaLabels();
             updateHeader();
             moveAllEditButtonsIntoActions();
+            ensurePreviousSwipeButton();
             scheduleGeometryUpdate();
         }, delay);
     });
 
-    log('Eldin Mobile UI v1.1.0 loaded.');
+    log('Eldin Mobile UI v1.2.0 loaded.');
 }
 
 init();

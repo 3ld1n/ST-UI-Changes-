@@ -1,5 +1,5 @@
 /* =========================================================
-   ELDIN MOBILE UI v1.1.0
+   ELDIN MOBILE UI v1.2.0
    Mobile-only SillyTavern chat redesign
    ========================================================= */
 
@@ -51,6 +51,30 @@
         -webkit-backdrop-filter: blur(18px) !important;
 
         z-index: 3010 !important;
+
+        transition:
+            transform 170ms ease,
+            opacity 170ms ease,
+            height 170ms ease,
+            min-height 170ms ease,
+            padding 170ms ease !important;
+    }
+
+    body.em-mobile-ui.em-header-hidden {
+        --topBarBlockSize: 0px !important;
+    }
+
+    body.em-mobile-ui.em-header-hidden #top-bar {
+        height: 0 !important;
+        min-height: 0 !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+
+        opacity: 0 !important;
+        pointer-events: none !important;
+
+        transform: translateY(-120%) !important;
+        overflow: hidden !important;
     }
 
     #em-mobile-header {
@@ -94,6 +118,18 @@
     .em-header-text {
         min-width: 0;
         overflow: hidden;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .em-header-avatar {
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .em-header-text:active,
+    .em-header-avatar:active {
+        opacity: 0.72;
     }
 
     .em-header-title {
@@ -278,33 +314,191 @@
         opacity: 1 !important;
     }
 
-    /*
-       Fix the panels shown in the user's screenshots:
-       Group Controls, API, Persona, Extensions, etc. open immediately
-       below the compact header and use the phone width.
-    */
-    body.em-mobile-ui #top-settings-holder .drawer-content {
-        position: fixed !important;
+    /* =====================================================
+       FULL-SIZE MOBILE PANEL STAGE
+       Native drawer content is temporarily moved here by JS.
+       ===================================================== */
 
-        top: calc(var(--em-topbar-bottom, 56px) + 4px) !important;
-        left: 8px !important;
-        right: 8px !important;
-        bottom: 8px !important;
+    #em-panel-backdrop {
+        position: fixed;
+        inset: 0;
 
-        width: auto !important;
+        background: rgba(0, 0, 0, 0.46);
+
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+
+        transition:
+            opacity 150ms ease,
+            visibility 150ms ease;
+
+        z-index: 4100;
+    }
+
+    #em-panel-stage {
+        position: fixed;
+
+        top: calc(var(--em-topbar-bottom, 56px) + 5px);
+        left: 7px;
+        right: 7px;
+        bottom: max(7px, env(safe-area-inset-bottom));
+
+        min-width: 0;
+        width: auto;
+        max-width: none;
+
+        display: grid;
+        grid-template-rows: 44px minmax(0, 1fr);
+
+        background: rgba(21, 21, 25, 0.985);
+        border: 1px solid rgba(255, 255, 255, 0.10);
+        border-radius: 20px;
+
+        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.52);
+
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+
+        transform: translateY(-5px) scale(0.992);
+        transform-origin: top center;
+
+        transition:
+            opacity 150ms ease,
+            transform 150ms ease,
+            visibility 150ms ease;
+
+        overflow: hidden;
+
+        z-index: 4110;
+    }
+
+    body.em-mobile-ui.em-panel-open #em-panel-backdrop {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+    }
+
+    body.em-mobile-ui.em-panel-open #em-panel-stage {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transform: translateY(0) scale(1);
+    }
+
+    #em-panel-stage-header {
+        min-width: 0;
+
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+
+        padding: 0 8px 0 14px;
+
+        border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+        background: rgba(255, 255, 255, 0.018);
+    }
+
+    #em-panel-stage-title {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+
+        font-size: 15px;
+        line-height: 1;
+        font-weight: 700;
+
+        color: rgba(255, 255, 255, 0.88);
+    }
+
+    .em-panel-stage-close {
+        width: 34px;
+        height: 34px;
+        min-width: 34px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        border-radius: 11px;
+
+        font-size: 25px;
+        line-height: 1;
+        font-weight: 300;
+
+        color: rgba(255, 255, 255, 0.80);
+        background: rgba(255, 255, 255, 0.045);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    #em-panel-stage-body {
+        min-width: 0;
+        min-height: 0;
+
+        overflow: hidden;
+    }
+
+    #em-panel-stage-body > .drawer-content.em-staged-panel {
+        position: static !important;
+
+        inset: auto !important;
+        top: auto !important;
+        left: auto !important;
+        right: auto !important;
+        bottom: auto !important;
+
+        width: 100% !important;
         min-width: 0 !important;
-        max-width: none !important;
-        height: auto !important;
-        max-height: none !important;
+        max-width: 100% !important;
+
+        height: 100% !important;
+        min-height: 0 !important;
+        max-height: 100% !important;
 
         margin: 0 !important;
-        transform: none !important;
+        padding: 10px !important;
+
+        display: block !important;
 
         overflow-x: hidden !important;
         overflow-y: auto !important;
         overscroll-behavior: contain !important;
+        -webkit-overflow-scrolling: touch;
 
-        z-index: 3985 !important;
+        transform: none !important;
+
+        border: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+
+        background: transparent !important;
+
+        transition: none !important;
+    }
+
+    #em-panel-stage-body > #right-nav-panel.em-staged-panel {
+        display: flex !important;
+        flex-flow: column !important;
+    }
+
+    #em-panel-stage-body > #right-nav-panel.em-staged-panel .scrollableInner {
+        min-height: 0 !important;
+        height: auto !important;
+        flex: 1 1 auto !important;
+        overflow-y: auto !important;
+    }
+
+    #em-panel-stage-body > .em-staged-panel select,
+    #em-panel-stage-body > .em-staged-panel input,
+    #em-panel-stage-body > .em-staged-panel textarea {
+        max-width: 100% !important;
+        box-sizing: border-box !important;
     }
 
     /* =====================================================
@@ -411,8 +605,17 @@
         opacity: 1 !important;
     }
 
+    /* Message actions are opened by long-press, so the ellipsis stays invisible. */
     body.em-mobile-ui .extraMesButtonsHint {
-        opacity: 0.58 !important;
+        display: none !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+
+    body.em-mobile-ui .mes[is_user="false"] .name_text,
+    body.em-mobile-ui .mes[is_user="false"] .mesAvatarWrapper .avatar {
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
     }
 
     /* =====================================================
@@ -548,7 +751,9 @@
         max-width: none !important;
 
         margin: 0 !important;
-        padding: 10px 7px !important;
+        padding: 10px 7px 10px 13px !important;
+
+        text-align: left !important;
 
         background: transparent !important;
         border: none !important;
@@ -710,6 +915,8 @@
 
         scrollbar-width: none;
         -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x proximity;
+        scroll-padding-inline: 6px;
     }
 
     #em-tool-row::-webkit-scrollbar {
@@ -735,7 +942,8 @@
     /* ---- Actual native SillyTavern options button, not a proxy ---- */
 
     body.em-mobile-ui #em-native-options-slot #options_button,
-    body.em-mobile-ui #em-left-extras-slot > * {
+    body.em-mobile-ui #em-left-extras-slot > *,
+    body.em-mobile-ui #em-prev-swipe-button {
         position: static !important;
 
         width: 42px !important;
@@ -760,6 +968,17 @@
 
         opacity: 1 !important;
         flex: 0 0 42px !important;
+        scroll-snap-align: start;
+    }
+
+    body.em-mobile-ui #em-prev-swipe-button:disabled {
+        opacity: 0.30 !important;
+        filter: grayscale(1) !important;
+        pointer-events: none !important;
+    }
+
+    body.em-mobile-ui #em-prev-swipe-button:not(:disabled) {
+        opacity: 1 !important;
     }
 
     /* Native ST menu is still anchored by Popper to the *real* options button. */
@@ -841,6 +1060,7 @@
 
         opacity: 1 !important;
         flex: 0 0 42px !important;
+        scroll-snap-align: start;
     }
 
     /* The user doesn't use Guided Impersonate. */
