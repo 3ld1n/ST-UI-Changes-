@@ -1,27 +1,16 @@
-# Eldin Mobile UI v1.5.0 — Guided Response hotfix 2
+# Eldin Mobile UI v1.5.0 — hotfix 3
 
-Version remains 1.5.0 as requested.
+Version remains **1.5.0**.
 
-## What changed
+## Guided Response fix
+The Guided Response button now replaces the original Guided Generations
+button node with a cloned one. This removes the old click handler that
+could still open an off-screen popup.
 
-The Guided Response button now uses a reliable two-step group flow:
+Group chats now rely on Eldin Mobile UI's own mobile character picker,
+and only after selection does it hand control to Guided Generations for
+the real response generation.
 
-1. Eldin Mobile UI opens its own small mobile character selector for group
-   chats.
-2. After you choose the member, the extension hands that exact selection back
-   to Guided Generations through the group-picker API GG already supports.
-3. Guided Generations still performs the real Guided Response itself:
-   - reads your typed guidance
-   - uses its configured Guided Response prompt
-   - applies its configured depth/role
-   - injects the instruction
-   - targets the selected member
-   - runs the real generation
-   - restores the input afterward
-
-Single-character chats call Guided Generations directly and do not show the
-group picker.
-
-The Guided Response icon remains the speech-bubble-with-dots icon.
-
-No other working Eldin Mobile UI features were intentionally changed.
+## Extra UI fix
+The custom Guided Response picker is now forced to appear as a centered
+modal inside the visible mobile viewport.

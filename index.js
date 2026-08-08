@@ -1183,20 +1183,37 @@ async function runGuidedResponseReliably() {
     }
 }
 
+
 function patchGuidedResponseButton() {
-    const button = document.querySelector('#gg_response_button');
-    if (!button) return;
+    const currentButton = document.querySelector('#gg_response_button');
+    if (!currentButton) return;
 
-    // GG puts Font Awesome icon classes directly on the button.
-    button.classList.remove('fa-dog');
-    button.classList.add('fa-comment-dots');
-    button.title = 'Guided Response';
-    button.setAttribute('aria-label', 'Guided Response');
+    const applyVisualState = (button) => {
+        button.classList.remove('fa-dog');
+        button.classList.add('fa-comment-dots');
+        button.title = 'Guided Response';
+        button.setAttribute('aria-label', 'Guided Response');
+    };
 
-    if (button.dataset.emGuidedResponsePatched === 'true') return;
-    button.dataset.emGuidedResponsePatched = 'true';
+    if (currentButton.dataset.emGuidedResponseOwned === 'true') {
+        applyVisualState(currentButton);
+        return;
+    }
 
-    button.addEventListener('click', async (event) => {
+    /*
+      Guided Generations still has its own click handler on this button.
+      After we relocate the toolbar, that original popup can render off-screen.
+      Replacing the node with a clone removes the old listener completely, so
+      only Eldin Mobile UI handles Guided Response on mobile.
+    */
+    const replacementButton = currentButton.cloneNode(true);
+    replacementButton.dataset.emGuidedResponseOwned = 'true';
+    replacementButton.dataset.emGuidedResponsePatched = 'true';
+    applyVisualState(replacementButton);
+
+    currentButton.replaceWith(replacementButton);
+
+    replacementButton.addEventListener('click', async (event) => {
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
@@ -1205,7 +1222,9 @@ function patchGuidedResponseButton() {
             await runGuidedResponseReliably();
         } catch (error) {
             console.error(`[${MODULE}] Guided Response failed`, error);
-            globalThis.toastr?.error?.('Guided Response failed. Check the console for details.');
+            globalThis.toastr?.error?.(
+                'Guided Response failed. Check the console for details.',
+            );
         }
     }, true);
 }

@@ -1447,3 +1447,24 @@
         font-size: 13px !important;
     }
 }
+
+
+/* v1.5 hotfix 3: stronger Guided Response picker placement */
+@media screen and (max-width: 1000px) {
+    body.em-mobile-ui #em-guided-response-picker {
+        align-items: center !important;
+        justify-content: center !important;
+        padding:
+            max(18px, env(safe-area-inset-top))
+            14px
+            max(18px, env(safe-area-inset-bottom))
+            14px !important;
+    }
+
+    body.em-mobile-ui #em-guided-response-picker .em-gr-picker-sheet {
+        width: min(420px, 100%) !important;
+        max-height: min(74dvh, 560px) !important;
+        margin: 0 !important;
+        transform: none !important;
+    }
+}
