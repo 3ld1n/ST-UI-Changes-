@@ -1,26 +1,61 @@
-# Eldin Mobile UI v1.5.0 — hotfix 5
+# Eldin Mobile UI v1.6.0
 
-Version remains **1.5.0**.
+Built on the stable v1.5 Guided Response hotfix.
 
-## Guided Response picker
-Rebuilt the group-character selector using the browser's native
-`<dialog>` top layer.
+## Wand tray order
 
-This avoids iPhone Safari's fixed-position viewport issue that was
-pushing the top of the selector off-screen.
+The first two existing controls stay where they were:
+- native chat hamburger
+- existing extra/wand control
 
-The selector should now:
-- stay fully visible in the center of the screen
-- show all group members with avatars
-- scroll internally if the group is large
-- close by tapping X, the backdrop, or choosing a character
+Guided Generations is visually reordered to:
+1. Previous swipe
+2. Guided Swipe / next saved swipe
+3. Guided Response
+4. Guided Continue
+5. Guided Generations tools / save bookmark
+6. Persistent Guides book + active count
 
-## Wand tray
-The Wand tray stays open while you are choosing a character.
-As soon as you choose the responder and Guided Response begins,
-the Wand tray closes automatically.
+The real buttons are not cloned or recreated; CSS changes their visual order
+while their original behavior remains intact.
 
-Single-character Guided Response also closes the Wand tray as soon as
-generation starts.
+## Scroll to latest
 
-No other working Eldin Mobile UI features were intentionally changed.
+When you scroll far enough above the newest message, a small down-arrow appears
+at the bottom-right above the composer.
+
+- tap it to smoothly return to the latest message
+- it disappears automatically when you're near the bottom
+- it hides while the Wand, top menus, settings panels, dialogs, or keyboard
+  input are active
+
+## Group header collage
+
+Group chats now use the same tiny circular header area without increasing the
+header height.
+
+- 1 present character: single portrait
+- 2: split portrait
+- 3: one larger left portrait + two stacked right portraits
+- 4: 2x2 grid
+- 5+: first three portraits + a +N tile
+
+Muted / disabled group members are treated as not currently present. If every
+member is disabled, the extension falls back to showing the full group rather
+than an empty avatar.
+
+## Group roster gallery
+
+Tap the group collage in the header to open a native mobile dialog showing all
+currently present group characters as large rectangular portrait cards.
+
+- high-resolution character avatar is requested first
+- thumbnail is used as fallback
+- character names are shown on the cards
+- X or backdrop closes the gallery
+- long groups scroll inside the gallery
+
+Tap the group title/subtitle as before to open Group Controls.
+
+No changes were made to the stable Guided Response implementation, swipe logic,
+top settings panels, Quick Persona, or message layout.
