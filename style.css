@@ -1,5 +1,5 @@
 /* =========================================================
-   ELDIN MOBILE UI v1.6.1
+   ELDIN MOBILE UI v1.6.2
    Mobile-only SillyTavern chat redesign
    ========================================================= */
 
@@ -1966,5 +1966,121 @@
     body.em-mobile-ui #em-scroll-latest-button {
         bottom: calc(82px + env(safe-area-inset-bottom)) !important;
         z-index: 4050 !important;
+    }
+}
+
+
+/* =========================================================
+   v1.6.2 — HARDENED iOS HOME-SCREEN PWA GEOMETRY
+   ========================================================= */
+@media screen and (max-width: 1000px) {
+    @supports (-webkit-touch-callout: none) {
+
+        /*
+           SillyTavern's iOS/PWA rules add bottom safe-area padding directly
+           to #sheld. Eldin Mobile UI already handles that inset in the
+           composer, so keeping both produces the large empty bottom gap.
+
+           We also stop relying on the native 100vh/100dvh height formulas:
+           fixed top + bottom is considerably more stable in an iOS PWA.
+        */
+        body.em-mobile-ui.PWA #sheld,
+        body.em-mobile-ui.em-standalone-pwa #sheld {
+            position: fixed !important;
+
+            top: calc(env(safe-area-inset-top) + var(--topBarBlockSize)) !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+
+            width: 100% !important;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+
+            margin: 0 !important;
+
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+            padding-left: max(env(safe-area-inset-left), 0px) !important;
+            padding-right: max(env(safe-area-inset-right), 0px) !important;
+
+            box-sizing: border-box !important;
+        }
+
+        /*
+           In translucent/full-screen PWA mode the page's y=0 is physically
+           behind the iOS status bar. Move the custom header into the safe
+           content area instead of letting the clock/Dynamic Island cover it.
+        */
+        body.em-mobile-ui.PWA #top-bar,
+        body.em-mobile-ui.em-standalone-pwa #top-bar {
+            top: env(safe-area-inset-top) !important;
+        }
+
+        /*
+           #sheld is a flex column: chat takes every remaining pixel and the
+           composer stays at the bottom. Remove SillyTavern's viewport-based
+           max-height so it cannot leave unused space below the composer.
+        */
+        body.em-mobile-ui.PWA #chat,
+        body.em-mobile-ui.em-standalone-pwa #chat {
+            flex: 1 1 0 !important;
+            min-height: 0 !important;
+            height: auto !important;
+            max-height: none !important;
+        }
+
+        body.em-mobile-ui.PWA #form_sheld,
+        body.em-mobile-ui.em-standalone-pwa #form_sheld {
+            flex: 0 0 auto !important;
+
+            /* Exactly ONE bottom safe-area inset. */
+            padding:
+                0
+                10px
+                max(7px, env(safe-area-inset-bottom))
+                !important;
+        }
+    }
+}
+
+
+/* =========================================================
+   v1.6.2 — SCROLL TO LATEST
+   Anchor it to the REAL composer position, not a guessed
+   distance from the bottom of the iPhone viewport.
+   ========================================================= */
+@media screen and (max-width: 1000px) {
+    body.em-mobile-ui #em-scroll-latest-button {
+        top: calc(var(--em-composer-top, 100dvh) - 48px) !important;
+        right: 17px !important;
+        bottom: auto !important;
+
+        z-index: 4050 !important;
+    }
+}
+
+
+/* =========================================================
+   v1.6.2 FINAL — reliable end-of-chat sentinel
+   ========================================================= */
+@media screen and (max-width: 1000px) {
+    body.em-mobile-ui #em-scroll-latest-sentinel {
+        flex: 0 0 1px !important;
+        width: 1px !important;
+        height: 1px !important;
+        min-height: 1px !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+
+    body.em-mobile-ui #em-scroll-latest-button.em-scroll-latest-visible {
+        display: flex !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
     }
 }

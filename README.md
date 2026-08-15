@@ -1,32 +1,41 @@
-# Eldin Mobile UI v1.6.1
+# Eldin Mobile UI v1.6.2
 
-Bug-fix release built directly from the exact v1.6.0 files currently on the
-ST-UI-Changes- GitHub repository.
+Focused iPhone Home Screen PWA bug-fix release.
 
-## iPhone Home Screen / PWA layout
+## PWA layout fix
 
-The extension previously forced iOS `black-translucent` status-bar mode.
-v1.6.1 uses opaque `black`, keeping the dark status bar while laying the web
-content below it.
+This version directly overrides SillyTavern's native iOS/PWA shell geometry.
 
-After updating, fully close the Home Screen PWA from the iOS app switcher and
-launch it again so iOS rebuilds the standalone viewport.
+In standalone/PWA mode:
+
+- the compact Eldin header is positioned below `safe-area-inset-top`
+- `#sheld` uses fixed top + bottom edges instead of iOS viewport-height formulas
+- SillyTavern's extra PWA bottom padding on `#sheld` is removed
+- the composer owns exactly one bottom safe-area inset
+- `#chat` flexes to fill every remaining pixel instead of retaining a viewport
+  max-height
+
+This targets both symptoms together:
+- header/status bar overlap at the top
+- large unused black area below the composer
 
 ## Scroll-to-latest arrow
 
-- no longer stays hidden because the textarea still owns focus
-- measures both scroll metrics and the physical position of the last message
-- appears sooner after scrolling upward
-- uses the last message as an iOS fallback scroll target
-- receives a slightly higher z-index
+The down-arrow now uses a real 1px sentinel at the physical end of the chat.
 
-## Long-press Message Actions
+An IntersectionObserver watches that sentinel relative to `#chat`:
+- if the end of the chat leaves the visible area, the arrow appears
+- when the end becomes visible again, it disappears
+- tapping the arrow scrolls directly to the sentinel
+- scroll metrics and visual-viewport geometry remain as fallbacks
 
-While holding a message bubble:
-- text selection is temporarily disabled
-- the iOS touch callout is disabled
-- accidental selection is cleared when Message Actions opens
-- the protection stays active until finger release
-- moving to scroll still cancels the long press
+This is intentionally more reliable than depending only on iOS `scrollTop`.
 
-All working v1.6 features remain unchanged.
+## Long press
+
+The v1.6.1 long-press fix is preserved:
+- no accidental text selection while holding a message
+- iOS callout suppressed during the hold
+- normal scrolling still cancels the long-press gesture
+
+All other working v1.6 features are unchanged.
