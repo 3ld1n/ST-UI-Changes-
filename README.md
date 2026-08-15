@@ -1,42 +1,32 @@
-# Eldin Mobile UI v1.6.3
+# Eldin Mobile UI v1.6.4
 
-Rollback / stabilization release.
+Small polish/fix release built directly from v1.6.3.
 
-## Important: PWA layout hacks removed
+## Scroll-to-latest arrow
 
-v1.6.3 is built from the original v1.6.0 layout code.
+v1.6.3 accidentally inherited an older CSS rule that hid the floating down
+arrow whenever the SillyTavern textarea still had focus.
 
-All experimental PWA/safe-area/viewport geometry changes from v1.6.1 and
-v1.6.2 are intentionally removed.
+On iPhone/PWA the textarea can keep focus even with the keyboard closed, so the
+arrow could remain invisible forever.
 
-This means Eldin Mobile UI once again leaves SillyTavern's native page/PWA
-geometry alone.
+v1.6.4 removes that focus-based hiding rule. The working v1.6.3 sentinel /
+IntersectionObserver logic is unchanged.
 
-## Preserved fixes
+## Composer bottom spacing
 
-### Long-press Message Actions
-The improved long-press behavior is retained:
-- no accidental text selection while holding a message
-- iOS text callout suppressed during the gesture
-- scrolling still cancels the hold normally
+The bottom composer now has a little more breathing room:
 
-### Scroll to latest
-The working down-arrow implementation is retained:
-- a 1px sentinel is kept at the physical end of #chat
-- IntersectionObserver detects when the end leaves the visible chat area
-- the down arrow appears when reading older messages
-- tapping it returns to the real end of the chat
-- it disappears again at the bottom
+- previous minimum bottom padding: 7px
+- new minimum bottom padding: 14px
 
-## Everything else
+This keeps Quick Persona, text input, Wand, and Send slightly above the bottom
+edge without making the composer noticeably taller.
 
-All stable v1.6.0 features remain unchanged:
-- messenger-style layout
-- compact header and top controls
-- settings panels
-- Quick Persona
-- Guided Generations
-- smart swipe navigation
-- Guided Response
-- group avatar collage / roster
-- Wand ordering
+The floating down arrow is also positioned a few pixels higher so it sits above
+the raised composer.
+
+## PWA layout
+
+No PWA shell / viewport / safe-area geometry hacks are included.
+The native SillyTavern layout remains untouched.

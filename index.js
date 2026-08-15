@@ -2198,7 +2198,7 @@ async function init() {
         }, delay);
     });
 
-    log('Eldin Mobile UI v1.6.3 loaded.');
+    log('Eldin Mobile UI v1.6.4 loaded.');
 }
 
 init();

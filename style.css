@@ -1,5 +1,5 @@
 /* =========================================================
-   ELDIN MOBILE UI v1.6.3
+   ELDIN MOBILE UI v1.6.4
    Mobile-only SillyTavern chat redesign
    ========================================================= */
 
@@ -632,7 +632,7 @@
 
     body.em-mobile-ui #form_sheld {
         width: 100% !important;
-        padding: 0 10px max(7px, env(safe-area-inset-bottom)) !important;
+        padding: 0 10px max(14px, env(safe-area-inset-bottom)) !important;
         margin: 0 !important;
         overflow: visible !important;
     }
@@ -1924,8 +1924,7 @@
     body.em-mobile-ui.em-tools-open #em-scroll-latest-button,
     body.em-mobile-ui.em-panel-open #em-scroll-latest-button,
     body.em-mobile-ui.em-top-menu-open #em-scroll-latest-button,
-    body.em-mobile-ui:has(dialog[open]) #em-scroll-latest-button,
-    body.em-mobile-ui:has(#send_textarea:focus) #em-scroll-latest-button {
+    body.em-mobile-ui:has(dialog[open]) #em-scroll-latest-button {
         opacity: 0 !important;
         visibility: hidden !important;
         pointer-events: none !important;
@@ -1965,5 +1964,16 @@
         opacity: 1 !important;
         visibility: visible !important;
         pointer-events: auto !important;
+    }
+}
+
+
+/* =========================================================
+   v1.6.4 — composer breathing room + visible scroll arrow
+   ========================================================= */
+@media screen and (max-width: 1000px) {
+    body.em-mobile-ui #em-scroll-latest-button {
+        right: 16px !important;
+        bottom: calc(94px + env(safe-area-inset-bottom)) !important;
     }
 }
