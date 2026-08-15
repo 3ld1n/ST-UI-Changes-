@@ -1,41 +1,42 @@
-# Eldin Mobile UI v1.6.2
+# Eldin Mobile UI v1.6.3
 
-Focused iPhone Home Screen PWA bug-fix release.
+Rollback / stabilization release.
 
-## PWA layout fix
+## Important: PWA layout hacks removed
 
-This version directly overrides SillyTavern's native iOS/PWA shell geometry.
+v1.6.3 is built from the original v1.6.0 layout code.
 
-In standalone/PWA mode:
+All experimental PWA/safe-area/viewport geometry changes from v1.6.1 and
+v1.6.2 are intentionally removed.
 
-- the compact Eldin header is positioned below `safe-area-inset-top`
-- `#sheld` uses fixed top + bottom edges instead of iOS viewport-height formulas
-- SillyTavern's extra PWA bottom padding on `#sheld` is removed
-- the composer owns exactly one bottom safe-area inset
-- `#chat` flexes to fill every remaining pixel instead of retaining a viewport
-  max-height
+This means Eldin Mobile UI once again leaves SillyTavern's native page/PWA
+geometry alone.
 
-This targets both symptoms together:
-- header/status bar overlap at the top
-- large unused black area below the composer
+## Preserved fixes
 
-## Scroll-to-latest arrow
-
-The down-arrow now uses a real 1px sentinel at the physical end of the chat.
-
-An IntersectionObserver watches that sentinel relative to `#chat`:
-- if the end of the chat leaves the visible area, the arrow appears
-- when the end becomes visible again, it disappears
-- tapping the arrow scrolls directly to the sentinel
-- scroll metrics and visual-viewport geometry remain as fallbacks
-
-This is intentionally more reliable than depending only on iOS `scrollTop`.
-
-## Long press
-
-The v1.6.1 long-press fix is preserved:
+### Long-press Message Actions
+The improved long-press behavior is retained:
 - no accidental text selection while holding a message
-- iOS callout suppressed during the hold
-- normal scrolling still cancels the long-press gesture
+- iOS text callout suppressed during the gesture
+- scrolling still cancels the hold normally
 
-All other working v1.6 features are unchanged.
+### Scroll to latest
+The working down-arrow implementation is retained:
+- a 1px sentinel is kept at the physical end of #chat
+- IntersectionObserver detects when the end leaves the visible chat area
+- the down arrow appears when reading older messages
+- tapping it returns to the real end of the chat
+- it disappears again at the bottom
+
+## Everything else
+
+All stable v1.6.0 features remain unchanged:
+- messenger-style layout
+- compact header and top controls
+- settings panels
+- Quick Persona
+- Guided Generations
+- smart swipe navigation
+- Guided Response
+- group avatar collage / roster
+- Wand ordering

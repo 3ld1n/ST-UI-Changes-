@@ -14,21 +14,14 @@ let longPressStart = null;
 let longPressMessage = null;
 let longPressBlock = null;
 let scrollLatestRaf = null;
-let scrollLatestObserver = null;
-let scrollLatestObservedChat = null;
 let scrollLatestSentinelVisible = true;
+let scrollLatestObservedChat = null;
+let scrollLatestObserver = null;
 
 const log = (...args) => console.log(`[${MODULE}]`, ...args);
 
 function isMobileLayout() {
     return window.matchMedia(MOBILE_QUERY).matches;
-}
-
-function isStandalonePwa() {
-    return (
-        window.matchMedia('(display-mode: standalone)').matches ||
-        window.navigator.standalone === true
-    );
 }
 
 function getContext() {
@@ -437,25 +430,13 @@ function updateHeader() {
 
 function updateGeometry() {
     geometryRaf = null;
-
-    const root = document.documentElement;
     const topBar = document.querySelector('#top-bar');
+    if (!topBar) return;
 
-    if (topBar) {
-        const rect = topBar.getBoundingClientRect();
-        root.style.setProperty('--em-topbar-top', `${Math.max(0, rect.top)}px`);
-        root.style.setProperty('--em-topbar-bottom', `${Math.max(0, rect.bottom)}px`);
-        root.style.setProperty('--em-topbar-height', `${Math.max(0, rect.height)}px`);
-    }
-
-    const composer = document.querySelector('#send_form');
-    if (composer) {
-        const rect = composer.getBoundingClientRect();
-        root.style.setProperty('--em-composer-top', `${Math.max(0, rect.top)}px`);
-        root.style.setProperty('--em-composer-bottom', `${Math.max(0, rect.bottom)}px`);
-    }
-
-    scheduleScrollLatestUpdate();
+    const rect = topBar.getBoundingClientRect();
+    document.documentElement.style.setProperty('--em-topbar-top', `${Math.max(0, rect.top)}px`);
+    document.documentElement.style.setProperty('--em-topbar-bottom', `${Math.max(0, rect.bottom)}px`);
+    document.documentElement.style.setProperty('--em-topbar-height', `${Math.max(0, rect.height)}px`);
 }
 
 function scheduleGeometryUpdate() {
@@ -1812,7 +1793,6 @@ function bindSillyTavernEvents() {
 }
 
 
-
 function ensureScrollLatestSentinel() {
     const chat = document.querySelector('#chat');
     if (!chat) return null;
@@ -2074,18 +2054,14 @@ function forceDarkBrowserChrome() {
         theme.setAttribute('content', color);
     }
 
-    /*
-       Keep the iOS Home Screen status bar dark without placing the web
-       content underneath it.
-    */
     let status = document.head.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
     if (!status) {
         status = document.createElement('meta');
         status.setAttribute('name', 'apple-mobile-web-app-status-bar-style');
         document.head.appendChild(status);
     }
-    if (status.getAttribute('content') !== 'black') {
-        status.setAttribute('content', 'black');
+    if (status.getAttribute('content') !== 'black-translucent') {
+        status.setAttribute('content', 'black-translucent');
     }
 }
 
@@ -2100,7 +2076,7 @@ function observeBrowserChrome() {
 
         if (
             theme?.getAttribute('content') !== '#101012' ||
-            status?.getAttribute('content') !== 'black'
+            status?.getAttribute('content') !== 'black-translucent'
         ) {
             forceDarkBrowserChrome();
         }
@@ -2185,7 +2161,6 @@ async function init() {
 
     initialized = true;
     document.body.classList.add('em-mobile-ui');
-    document.body.classList.toggle('em-standalone-pwa', isStandalonePwa());
     document.body.classList.remove('em-header-hidden');
 
     buildPanelStage();
@@ -2223,7 +2198,7 @@ async function init() {
         }, delay);
     });
 
-    log('Eldin Mobile UI v1.6.2 loaded.');
+    log('Eldin Mobile UI v1.6.3 loaded.');
 }
 
 init();
