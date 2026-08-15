@@ -12,12 +12,20 @@ let lastChatScrollTop = 0;
 let longPressTimer = null;
 let longPressStart = null;
 let longPressMessage = null;
+let longPressBlock = null;
 let scrollLatestRaf = null;
 
 const log = (...args) => console.log(`[${MODULE}]`, ...args);
 
 function isMobileLayout() {
     return window.matchMedia(MOBILE_QUERY).matches;
+}
+
+function isStandalonePwa() {
+    return (
+        window.matchMedia('(display-mode: standalone)').matches ||
+        window.navigator.standalone === true
+    );
 }
 
 function getContext() {
@@ -1006,8 +1014,11 @@ function cancelLongPress() {
         longPressTimer = null;
     }
 
+    longPressBlock?.classList.remove('em-longpress-armed');
+
     longPressStart = null;
     longPressMessage = null;
+    longPressBlock = null;
 }
 
 function bindLongPressMessageActions() {
@@ -1033,10 +1044,19 @@ function bindLongPressMessageActions() {
             pointerId: event.pointerId,
         };
         longPressMessage = message;
+        longPressBlock = block;
+
+        longPressBlock.classList.add('em-longpress-armed');
 
         longPressTimer = window.setTimeout(() => {
             const hint = longPressMessage?.querySelector('.extraMesButtonsHint');
             if (hint) {
+                try {
+                    window.getSelection?.()?.removeAllRanges?.();
+                } catch {
+                    // no-op
+                }
+
                 hint.dispatchEvent(new MouseEvent('click', {
                     bubbles: true,
                     cancelable: true,
@@ -1044,7 +1064,10 @@ function bindLongPressMessageActions() {
                 }));
                 longPressMessage?.classList.add('em-actions-opened-by-hold');
             }
-            cancelLongPress();
+
+            // Keep selection disabled until the finger is actually released.
+            longPressTimer = null;
+            longPressStart = null;
         }, 520);
     }, { passive: true });
 
@@ -1063,6 +1086,13 @@ function bindLongPressMessageActions() {
 
     document.addEventListener('pointerup', cancelLongPress, { passive: true });
     document.addEventListener('pointercancel', cancelLongPress, { passive: true });
+
+    document.addEventListener('selectstart', (event) => {
+        if (!(event.target instanceof Node)) return;
+        if (longPressBlock?.contains(event.target)) {
+            event.preventDefault();
+        }
+    }, true);
 
     document.addEventListener('contextmenu', (event) => {
         if (!(event.target instanceof Element)) return;
@@ -1768,10 +1798,21 @@ function getDistanceFromChatBottom() {
     const chat = document.querySelector('#chat');
     if (!chat) return 0;
 
-    return Math.max(
+    const scrollMetric = Math.max(
         0,
-        chat.scrollHeight - chat.scrollTop - chat.clientHeight
+        chat.scrollHeight - chat.clientHeight - Math.max(0, chat.scrollTop)
     );
+
+    const messages = chat.querySelectorAll('.mes');
+    const lastMessage = messages.length ? messages[messages.length - 1] : null;
+
+    if (!lastMessage) return scrollMetric;
+
+    const chatRect = chat.getBoundingClientRect();
+    const messageRect = lastMessage.getBoundingClientRect();
+    const geometryMetric = Math.max(0, messageRect.bottom - chatRect.bottom);
+
+    return Math.max(scrollMetric, geometryMetric);
 }
 
 function updateScrollLatestButton() {
@@ -1780,7 +1821,7 @@ function updateScrollLatestButton() {
     const button = document.querySelector('#em-scroll-latest-button');
     if (!button) return;
 
-    const shouldShow = getDistanceFromChatBottom() > 180;
+    const shouldShow = getDistanceFromChatBottom() > 96;
     button.classList.toggle('em-scroll-latest-visible', shouldShow);
     button.setAttribute('aria-hidden', String(!shouldShow));
 }
@@ -1794,6 +1835,9 @@ function scrollChatToLatest() {
     const chat = document.querySelector('#chat');
     if (!chat) return;
 
+    const messages = chat.querySelectorAll('.mes');
+    const lastMessage = messages.length ? messages[messages.length - 1] : null;
+
     try {
         chat.scrollTo({
             top: chat.scrollHeight,
@@ -1803,7 +1847,20 @@ function scrollChatToLatest() {
         chat.scrollTop = chat.scrollHeight;
     }
 
-    window.setTimeout(scheduleScrollLatestUpdate, 280);
+    if (lastMessage) {
+        window.setTimeout(() => {
+            try {
+                lastMessage.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'end',
+                });
+            } catch {
+                // The scrollTop fallback already ran.
+            }
+        }, 40);
+    }
+
+    window.setTimeout(scheduleScrollLatestUpdate, 320);
 }
 
 function buildScrollLatestButton() {
@@ -1882,14 +1939,18 @@ function forceDarkBrowserChrome() {
         theme.setAttribute('content', color);
     }
 
+    /*
+       Keep the iOS Home Screen status bar dark without placing the web
+       content underneath it.
+    */
     let status = document.head.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
     if (!status) {
         status = document.createElement('meta');
         status.setAttribute('name', 'apple-mobile-web-app-status-bar-style');
         document.head.appendChild(status);
     }
-    if (status.getAttribute('content') !== 'black-translucent') {
-        status.setAttribute('content', 'black-translucent');
+    if (status.getAttribute('content') !== 'black') {
+        status.setAttribute('content', 'black');
     }
 }
 
@@ -1904,7 +1965,7 @@ function observeBrowserChrome() {
 
         if (
             theme?.getAttribute('content') !== '#101012' ||
-            status?.getAttribute('content') !== 'black-translucent'
+            status?.getAttribute('content') !== 'black'
         ) {
             forceDarkBrowserChrome();
         }
@@ -1989,6 +2050,7 @@ async function init() {
 
     initialized = true;
     document.body.classList.add('em-mobile-ui');
+    document.body.classList.toggle('em-standalone-pwa', isStandalonePwa());
     document.body.classList.remove('em-header-hidden');
 
     buildPanelStage();
@@ -2026,7 +2088,7 @@ async function init() {
         }, delay);
     });
 
-    log('Eldin Mobile UI v1.6.0 loaded.');
+    log('Eldin Mobile UI v1.6.1 loaded.');
 }
 
 init();

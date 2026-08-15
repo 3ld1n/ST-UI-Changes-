@@ -1,61 +1,32 @@
-# Eldin Mobile UI v1.6.0
+# Eldin Mobile UI v1.6.1
 
-Built on the stable v1.5 Guided Response hotfix.
+Bug-fix release built directly from the exact v1.6.0 files currently on the
+ST-UI-Changes- GitHub repository.
 
-## Wand tray order
+## iPhone Home Screen / PWA layout
 
-The first two existing controls stay where they were:
-- native chat hamburger
-- existing extra/wand control
+The extension previously forced iOS `black-translucent` status-bar mode.
+v1.6.1 uses opaque `black`, keeping the dark status bar while laying the web
+content below it.
 
-Guided Generations is visually reordered to:
-1. Previous swipe
-2. Guided Swipe / next saved swipe
-3. Guided Response
-4. Guided Continue
-5. Guided Generations tools / save bookmark
-6. Persistent Guides book + active count
+After updating, fully close the Home Screen PWA from the iOS app switcher and
+launch it again so iOS rebuilds the standalone viewport.
 
-The real buttons are not cloned or recreated; CSS changes their visual order
-while their original behavior remains intact.
+## Scroll-to-latest arrow
 
-## Scroll to latest
+- no longer stays hidden because the textarea still owns focus
+- measures both scroll metrics and the physical position of the last message
+- appears sooner after scrolling upward
+- uses the last message as an iOS fallback scroll target
+- receives a slightly higher z-index
 
-When you scroll far enough above the newest message, a small down-arrow appears
-at the bottom-right above the composer.
+## Long-press Message Actions
 
-- tap it to smoothly return to the latest message
-- it disappears automatically when you're near the bottom
-- it hides while the Wand, top menus, settings panels, dialogs, or keyboard
-  input are active
+While holding a message bubble:
+- text selection is temporarily disabled
+- the iOS touch callout is disabled
+- accidental selection is cleared when Message Actions opens
+- the protection stays active until finger release
+- moving to scroll still cancels the long press
 
-## Group header collage
-
-Group chats now use the same tiny circular header area without increasing the
-header height.
-
-- 1 present character: single portrait
-- 2: split portrait
-- 3: one larger left portrait + two stacked right portraits
-- 4: 2x2 grid
-- 5+: first three portraits + a +N tile
-
-Muted / disabled group members are treated as not currently present. If every
-member is disabled, the extension falls back to showing the full group rather
-than an empty avatar.
-
-## Group roster gallery
-
-Tap the group collage in the header to open a native mobile dialog showing all
-currently present group characters as large rectangular portrait cards.
-
-- high-resolution character avatar is requested first
-- thumbnail is used as fallback
-- character names are shown on the cards
-- X or backdrop closes the gallery
-- long groups scroll inside the gallery
-
-Tap the group title/subtitle as before to open Group Controls.
-
-No changes were made to the stable Guided Response implementation, swipe logic,
-top settings panels, Quick Persona, or message layout.
+All working v1.6 features remain unchanged.

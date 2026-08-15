@@ -1,5 +1,5 @@
 /* =========================================================
-   ELDIN MOBILE UI v1.6.0
+   ELDIN MOBILE UI v1.6.1
    Mobile-only SillyTavern chat redesign
    ========================================================= */
 
@@ -1924,10 +1924,47 @@
     body.em-mobile-ui.em-tools-open #em-scroll-latest-button,
     body.em-mobile-ui.em-panel-open #em-scroll-latest-button,
     body.em-mobile-ui.em-top-menu-open #em-scroll-latest-button,
-    body.em-mobile-ui:has(dialog[open]) #em-scroll-latest-button,
-    body.em-mobile-ui:has(#send_textarea:focus) #em-scroll-latest-button {
+    body.em-mobile-ui:has(dialog[open]) #em-scroll-latest-button {
         opacity: 0 !important;
         visibility: hidden !important;
         pointer-events: none !important;
+    }
+}
+
+
+/* =========================================================
+   v1.6.1 — iPhone Home Screen / PWA stabilization
+   ========================================================= */
+@media screen and (max-width: 1000px) {
+    html,
+    body.em-mobile-ui,
+    body.em-mobile-ui.em-standalone-pwa {
+        background-color: #101012 !important;
+    }
+
+    body.em-mobile-ui.em-standalone-pwa #form_sheld {
+        padding-bottom: max(6px, env(safe-area-inset-bottom)) !important;
+    }
+}
+
+/* =========================================================
+   v1.6.1 — message long-press without accidental selection
+   ========================================================= */
+@media screen and (max-width: 1000px) {
+    body.em-mobile-ui .mes .mes_block.em-longpress-armed,
+    body.em-mobile-ui .mes .mes_block.em-longpress-armed * {
+        -webkit-user-select: none !important;
+        user-select: none !important;
+        -webkit-touch-callout: none !important;
+    }
+}
+
+/* =========================================================
+   v1.6.1 — scroll-to-latest visibility polish
+   ========================================================= */
+@media screen and (max-width: 1000px) {
+    body.em-mobile-ui #em-scroll-latest-button {
+        bottom: calc(82px + env(safe-area-inset-bottom)) !important;
+        z-index: 4050 !important;
     }
 }
