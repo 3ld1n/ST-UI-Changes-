@@ -1793,6 +1793,37 @@ function bindSillyTavernEvents() {
 }
 
 
+
+function getChatScrollContainer() {
+    const chat = document.querySelector('#chat');
+    if (!chat) return null;
+
+    /*
+       Do not assume #chat is the scroll owner.
+       Depending on SillyTavern/iOS layout, scrolling can be owned by #chat,
+       one of its parents, or the document itself.
+    */
+    let node = chat;
+
+    while (node && node !== document.body && node !== document.documentElement) {
+        try {
+            const style = window.getComputedStyle(node);
+            const overflowY = style.overflowY || '';
+            const canScroll =
+                /(auto|scroll|overlay)/i.test(overflowY) &&
+                node.scrollHeight > node.clientHeight + 8;
+
+            if (canScroll) return node;
+        } catch {
+            // Keep walking upward.
+        }
+
+        node = node.parentElement;
+    }
+
+    return document.scrollingElement || document.documentElement;
+}
+
 function ensureScrollLatestSentinel() {
     const chat = document.querySelector('#chat');
     if (!chat) return null;
@@ -1805,21 +1836,27 @@ function ensureScrollLatestSentinel() {
         sentinel.setAttribute('aria-hidden', 'true');
     }
 
-    /*
-       Always keep it at the literal end of #chat. SillyTavern can append or
-       replace messages after generation/swiping/chat switching.
-    */
     if (chat.lastElementChild !== sentinel) {
         chat.appendChild(sentinel);
     }
 
-    if (
-        !scrollLatestObserver ||
-        scrollLatestObservedChat !== chat
-    ) {
+    const scrollContainer = getChatScrollContainer();
+    const observerRoot =
+        scrollContainer === document.scrollingElement ||
+        scrollContainer === document.documentElement ||
+        scrollContainer === document.body
+            ? null
+            : scrollContainer;
+
+    const observedRootChanged =
+        scrollLatestObservedChat !== chat ||
+        scrollLatestObserver?._emRoot !== observerRoot;
+
+    if (!scrollLatestObserver || observedRootChanged) {
         scrollLatestObserver?.disconnect();
 
         scrollLatestObservedChat = chat;
+
         scrollLatestObserver = new IntersectionObserver(
             (entries) => {
                 const entry = entries[0];
@@ -1827,11 +1864,14 @@ function ensureScrollLatestSentinel() {
                 scheduleScrollLatestUpdate();
             },
             {
-                root: chat,
+                root: observerRoot,
                 threshold: 0.01,
-                rootMargin: '0px 0px 6px 0px',
+                rootMargin: '0px 0px 4px 0px',
             },
         );
+
+        // Private marker used only by Eldin Mobile UI.
+        scrollLatestObserver._emRoot = observerRoot;
     }
 
     try {
@@ -1844,6 +1884,25 @@ function ensureScrollLatestSentinel() {
     return sentinel;
 }
 
+function getVisibleChatBottom() {
+    const composerRect = document.querySelector('#send_form')?.getBoundingClientRect();
+    const viewport = window.visualViewport;
+
+    const viewportBottom = viewport
+        ? viewport.offsetTop + viewport.height
+        : window.innerHeight;
+
+    if (
+        composerRect &&
+        Number.isFinite(composerRect.top) &&
+        composerRect.top > 0
+    ) {
+        return Math.min(viewportBottom, composerRect.top - 6);
+    }
+
+    return viewportBottom;
+}
+
 function getDistanceFromChatBottom() {
     const chat = document.querySelector('#chat');
     if (!chat) return 0;
@@ -1853,40 +1912,46 @@ function getDistanceFromChatBottom() {
         chat.querySelector('.mes.last_mes') ||
         (messages.length ? messages[messages.length - 1] : null);
 
-    const scrollRange = Math.max(0, chat.scrollHeight - chat.clientHeight);
-    const scrollTop = Math.max(0, Number(chat.scrollTop) || 0);
-    const scrollMetric = Math.max(0, scrollRange - scrollTop);
-
-    if (!lastMessage) return scrollMetric;
-
-    const chatRect = chat.getBoundingClientRect();
-    const messageRect = lastMessage.getBoundingClientRect();
-
-    const composerRect = document.querySelector('#send_form')?.getBoundingClientRect();
-    const viewport = window.visualViewport;
-    const viewportBottom = viewport
-        ? viewport.offsetTop + viewport.height
-        : window.innerHeight;
+    if (!lastMessage) return 0;
 
     /*
-       The visible chat ends at whichever comes first:
-       - the actual #chat rectangle,
-       - the top of the composer,
-       - the visual viewport bottom.
+       Geometry works regardless of WHICH element is currently scrolling.
+       If the last message sits below the visible area above the composer,
+       the user is not at the latest content.
     */
-    let visibleBottom = Math.min(chatRect.bottom, viewportBottom);
+    const visibleBottom = getVisibleChatBottom();
+    const messageRect = lastMessage.getBoundingClientRect();
+    const geometryDistance = Math.max(0, messageRect.bottom - visibleBottom);
+
+    /*
+       Also inspect the real scrolling container if one exists.
+    */
+    const scrollContainer = getChatScrollContainer();
+    let scrollDistance = 0;
 
     if (
-        composerRect &&
-        Number.isFinite(composerRect.top) &&
-        composerRect.top > chatRect.top
+        scrollContainer &&
+        scrollContainer !== document.scrollingElement &&
+        scrollContainer !== document.documentElement &&
+        scrollContainer !== document.body
     ) {
-        visibleBottom = Math.min(visibleBottom, composerRect.top - 4);
+        scrollDistance = Math.max(
+            0,
+            scrollContainer.scrollHeight -
+                scrollContainer.clientHeight -
+                Math.max(0, Number(scrollContainer.scrollTop) || 0),
+        );
+    } else {
+        const root = document.scrollingElement || document.documentElement;
+        scrollDistance = Math.max(
+            0,
+            root.scrollHeight -
+                window.innerHeight -
+                Math.max(0, Number(root.scrollTop) || window.scrollY || 0),
+        );
     }
 
-    const geometryMetric = Math.max(0, messageRect.bottom - visibleBottom);
-
-    return Math.max(scrollMetric, geometryMetric);
+    return Math.max(geometryDistance, scrollDistance);
 }
 
 function updateScrollLatestButton() {
@@ -1898,17 +1963,20 @@ function updateScrollLatestButton() {
 
     ensureScrollLatestSentinel();
 
-    const hasScrollableHistory = chat.scrollHeight > chat.clientHeight + 16;
+    const messages = chat.querySelectorAll('.mes');
+    const hasMessages = messages.length > 0;
+    const distance = getDistanceFromChatBottom();
 
     /*
-       Primary signal: the 1px end-of-chat sentinel is outside the visible
-       #chat viewport. Geometry remains as a fallback for unusual iOS states.
+       Do NOT gate this on #chat.scrollHeight > #chat.clientHeight.
+       That was the bug: in the current PWA layout, #chat is not always the
+       element that owns scrolling, so that check could stay false forever.
     */
     const shouldShow =
-        hasScrollableHistory &&
+        hasMessages &&
         (
-            !scrollLatestSentinelVisible ||
-            getDistanceFromChatBottom() > 48
+            distance > 56 ||
+            !scrollLatestSentinelVisible
         );
 
     button.classList.toggle('em-scroll-latest-visible', shouldShow);
@@ -1927,19 +1995,35 @@ function scrollChatToLatest() {
     const sentinel = ensureScrollLatestSentinel();
     const messages = chat.querySelectorAll('.mes');
     const lastMessage = messages.length ? messages[messages.length - 1] : null;
+    const scrollContainer = getChatScrollContainer();
 
+    /*
+       First scroll the actual scroll owner.
+    */
     try {
-        chat.scrollTo({
-            top: chat.scrollHeight,
-            behavior: 'smooth',
-        });
+        if (
+            scrollContainer &&
+            scrollContainer !== document.scrollingElement &&
+            scrollContainer !== document.documentElement &&
+            scrollContainer !== document.body
+        ) {
+            scrollContainer.scrollTo({
+                top: scrollContainer.scrollHeight,
+                behavior: 'smooth',
+            });
+        } else {
+            window.scrollTo({
+                top: document.documentElement.scrollHeight,
+                behavior: 'smooth',
+            });
+        }
     } catch {
-        chat.scrollTop = chat.scrollHeight;
+        // The sentinel fallback below will still run.
     }
 
     /*
-       On iOS, directly scrolling the true end sentinel is more reliable than
-       trusting one scrollTop assignment while the visual viewport is settling.
+       Then target the literal end of #chat. This is the most reliable iOS
+       fallback and works even if SillyTavern changes the scroll owner.
     */
     window.setTimeout(() => {
         try {
@@ -1948,9 +2032,9 @@ function scrollChatToLatest() {
                 block: 'end',
             });
         } catch {
-            // The scrollTop fallback above already ran.
+            // no-op
         }
-    }, 30);
+    }, 25);
 
     window.setTimeout(scheduleScrollLatestUpdate, 360);
 }
@@ -1963,7 +2047,16 @@ function buildScrollLatestButton() {
         'Scroll to latest message',
         'fa-solid fa-arrow-down'
     );
+
     button.setAttribute('aria-hidden', 'true');
+
+    // Literal fallback so there is still a visible arrow if an icon font fails.
+    const fallback = document.createElement('span');
+    fallback.className = 'em-scroll-latest-fallback';
+    fallback.textContent = '↓';
+    fallback.setAttribute('aria-hidden', 'true');
+    button.appendChild(fallback);
+
     button.addEventListener('click', scrollChatToLatest);
 
     document.body.appendChild(button);
@@ -1982,9 +2075,8 @@ function bindScrollLatestButton() {
     }
 
     /*
-       scroll does not bubble normally, but a capture listener sees scrolls
-       from nested scrolling containers. This makes the button reliable even
-       if a SillyTavern/iOS update changes the element that owns scrolling.
+       Listen globally too, because the current scroll owner may be a parent
+       of #chat or the document itself.
     */
     if (document.documentElement.dataset.emGlobalScrollLatestBound !== '1') {
         document.documentElement.dataset.emGlobalScrollLatestBound = '1';
@@ -1999,12 +2091,29 @@ function bindScrollLatestButton() {
             capture: true,
         });
 
+        window.addEventListener('scroll', scheduleScrollLatestUpdate, { passive: true });
         window.addEventListener('resize', scheduleScrollLatestUpdate, { passive: true });
-        window.visualViewport?.addEventListener('resize', scheduleScrollLatestUpdate, { passive: true });
-        window.visualViewport?.addEventListener('scroll', scheduleScrollLatestUpdate, { passive: true });
+
+        window.visualViewport?.addEventListener(
+            'resize',
+            scheduleScrollLatestUpdate,
+            { passive: true },
+        );
+
+        window.visualViewport?.addEventListener(
+            'scroll',
+            scheduleScrollLatestUpdate,
+            { passive: true },
+        );
     }
 
-    scheduleScrollLatestUpdate();
+    /*
+       One short polling window after load/chat switch catches iOS cases where
+       layout settles without emitting a useful scroll event.
+    */
+    [60, 180, 420, 900].forEach(delay => {
+        window.setTimeout(scheduleScrollLatestUpdate, delay);
+    });
 }
 
 function bindOutsideClicks() {
@@ -2198,7 +2307,7 @@ async function init() {
         }, delay);
     });
 
-    log('Eldin Mobile UI v1.6.4 loaded.');
+    log('Eldin Mobile UI v1.6.5 loaded.');
 }
 
 init();

@@ -1,32 +1,29 @@
-# Eldin Mobile UI v1.6.4
+# Eldin Mobile UI v1.6.5
 
-Small polish/fix release built directly from v1.6.3.
+Focused scroll-to-latest reliability fix built directly from v1.6.4.
 
-## Scroll-to-latest arrow
+## Why the arrow could still stay hidden
 
-v1.6.3 accidentally inherited an older CSS rule that hid the floating down
-arrow whenever the SillyTavern textarea still had focus.
+The previous implementation still assumed that `#chat` itself had to be
+scrollable before the arrow was allowed to appear.
 
-On iPhone/PWA the textarea can keep focus even with the keyboard closed, so the
-arrow could remain invisible forever.
+In the current SillyTavern iPhone/PWA layout, the actual scroll owner can be
+`#chat`, a parent container, or the document. That made the old
+`#chat.scrollHeight > #chat.clientHeight` gate capable of staying false even
+while the user was visibly scrolling through old messages.
 
-v1.6.4 removes that focus-based hiding rule. The working v1.6.3 sentinel /
-IntersectionObserver logic is unchanged.
+## What v1.6.5 does
 
-## Composer bottom spacing
+- dynamically finds the real scroll container
+- no longer requires `#chat` itself to own scrolling
+- measures the last message against the visible area above the composer
+- keeps the end-of-chat sentinel + IntersectionObserver
+- listens to scroll/touch movement globally as well as on `#chat`
+- performs several short post-load checks while iOS layout settles
+- scrolls the actual scroll owner first, then the literal chat-end sentinel
+- raises the button z-index so it cannot sit behind the chat/composer
+- preserves the v1.6.4 composer bottom padding
+- preserves the long-press text-selection fix
+- does not reintroduce any PWA viewport/shell hacks
 
-The bottom composer now has a little more breathing room:
-
-- previous minimum bottom padding: 7px
-- new minimum bottom padding: 14px
-
-This keeps Quick Persona, text input, Wand, and Send slightly above the bottom
-edge without making the composer noticeably taller.
-
-The floating down arrow is also positioned a few pixels higher so it sits above
-the raised composer.
-
-## PWA layout
-
-No PWA shell / viewport / safe-area geometry hacks are included.
-The native SillyTavern layout remains untouched.
+This release changes only the scroll-to-latest system.

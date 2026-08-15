@@ -1,5 +1,5 @@
 /* =========================================================
-   ELDIN MOBILE UI v1.6.4
+   ELDIN MOBILE UI v1.6.5
    Mobile-only SillyTavern chat redesign
    ========================================================= */
 
@@ -1975,5 +1975,42 @@
     body.em-mobile-ui #em-scroll-latest-button {
         right: 16px !important;
         bottom: calc(94px + env(safe-area-inset-bottom)) !important;
+    }
+}
+
+
+/* =========================================================
+   v1.6.5 — universal scroll-to-latest visibility
+   ========================================================= */
+@media screen and (max-width: 1000px) {
+    body.em-mobile-ui #em-scroll-latest-button {
+        display: flex !important;
+        right: 16px !important;
+        bottom: calc(96px + env(safe-area-inset-bottom)) !important;
+        z-index: 99990 !important;
+    }
+
+    body.em-mobile-ui #em-scroll-latest-button.em-scroll-latest-visible {
+        display: flex !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+        transform: translateY(0) scale(1) !important;
+    }
+
+    body.em-mobile-ui #em-scroll-latest-button .em-scroll-latest-fallback {
+        display: none !important;
+        font-size: 21px !important;
+        line-height: 1 !important;
+        font-weight: 700 !important;
+        transform: translateY(-1px) !important;
+    }
+
+    /*
+       If Font Awesome fails to render for any reason, the literal ↓ fallback
+       takes over automatically when the icon has no usable dimensions.
+    */
+    body.em-mobile-ui #em-scroll-latest-button:not(:has(i)) .em-scroll-latest-fallback {
+        display: block !important;
     }
 }
